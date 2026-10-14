@@ -1,0 +1,97 @@
+/* YOUR CAFÉ — BATCH 12 | Responsive + keyboard accessibility final polish.
+ * Import LAST in src/main.jsx. This is an additive stylesheet and does not
+ * change the order/payment/reservation business logic.
+ */
+:root { color-scheme: light; }
+html { scroll-behavior: smooth; scroll-padding-top: 96px; }
+body { margin: 0; max-width: 100%; min-width: 320px; }
+#root, .public-app, .staff-app, .yc-public-shell, .staff-workspace,
+.staff-main, .page-section, main { min-width: 0; }
+*, *::before, *::after { box-sizing: border-box; }
+img, picture, video, canvas { max-width: 100%; }
+img { height: auto; }
+button, input, select, textarea { font: inherit; }
+textarea { max-width: 100%; }
+input, select, textarea { min-width: 0; }
+button, a, input, select, textarea { -webkit-tap-highlight-color: transparent; }
+button:not(:disabled), [role="button"] { touch-action: manipulation; }
+:where(button, a, input, select, textarea, [tabindex]):focus-visible {
+  outline: 3px solid #b58b5a;
+  outline-offset: 3px;
+}
+:where(.shell, .yc-menu-page, .yc-public-shell, .yc-staff-layout,
+.yc6-cart, .yc6-reserve, .yc7-pos, .yc10-availability) { max-width: 100%; }
+:where(.product-grid,.yc-menu-grid,.yc6-grid,.yc6-board,.yc7-pos-layout,
+.yc6-cart .yc6-grid,.yc10-availability .grid,.yc10-availability .filters) > * { min-width: 0; }
+/* Very long transaction references, table IDs, notes and product names. */
+:where(.staff-app,.public-app) :where(h1,h2,h3,h4,p,small,strong,td,th,label) {
+  overflow-wrap: anywhere;
+}
+/* Tabular data should scroll within itself, not stretch the viewport. */
+:where(.staff-app,.public-app) :where(.table-wrap,.yc-table-scroll,.table-scroll,
+.transactions-table,.reports-table,.inventory-table) {
+  max-width: 100%; overflow-x: auto; overscroll-behavior-x: contain;
+}
+:where(.staff-app,.public-app) table { border-collapse: collapse; }
+/* Better anchor positioning beneath the sticky café navbar. */
+:where(#yc-menu-catalog,#retail-selection,#main-content,#staff-content) { scroll-margin-top: 100px; }
+/* Accessible render-error recovery. */
+.yc-error-screen { min-height: 100dvh; padding: 40px 20px; display: grid; place-items: center;
+  background: radial-gradient(circle at 80% 15%,#6b4532 0,#241813 65%); color: #fdf3e6; }
+.yc-error-card { width: min(620px,100%); border: 1px solid #ffffff36; padding: clamp(24px,6vw,58px);
+  background: #32241ebf; }
+.yc-error-eyebrow { font-size: 11px; font-weight: 800; letter-spacing: .18em; color:#d6b58c; }
+.yc-error-card h1 { font: 500 clamp(46px,8vw,78px)/1 'Cormorant Garamond',Georgia,serif; margin: 20px 0; }
+.yc-error-card p { line-height: 1.8; color: #e7dac9; }
+.yc-error-actions { display: flex; flex-wrap: wrap; gap: 12px; margin: 26px 0 35px; }
+.yc-error-actions button,.yc-error-actions a { min-height: 48px; padding: 14px 18px; border: 1px solid #d4b38f;
+  background: #b58b5a; color: #241813; font-weight: 800; text-decoration: none; font-size: 12px; }
+.yc-error-actions a { background: transparent; color:#fdf3e6; }
+.yc-error-card details { margin-bottom:25px; }
+.yc-error-card pre { overflow-x:auto; white-space: pre-wrap; overflow-wrap: anywhere; }
+.yc-error-card small { font-size: 11px; color:#d6c3af; }
+@media (max-width: 1024px) {
+  :where(.staff-main,.staff-workspace) { min-width: 0; }
+  .product-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .yc-menu-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
+}
+@media (max-width: 720px) {
+  .shell { width: calc(100% - 32px); }
+  .section { padding-top: clamp(54px,8vw,80px); padding-bottom: clamp(54px,8vw,80px); }
+  .hero { min-height: 540px; height: auto; }
+  .hero h1 { font-size: clamp(56px,13vw,86px); }
+  .hero-floating { position: static; margin: 0 16px 24px; }
+  .section-top { flex-wrap: wrap; }
+  .yc6-cart .yc6-grid { grid-template-columns: minmax(0,1fr); }
+  .yc7-pos .yc7-pos-layout { grid-template-columns: minmax(0,1fr); }
+  .yc10-availability .grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .staff-top { max-width: 100%; }
+  .staff-main { min-width: 0; width: 100%; padding-inline: 16px; }
+}
+@media (max-width: 480px) {
+  .shell { width: calc(100% - 28px); }
+  .product-grid, .yc-menu-grid { grid-template-columns: minmax(0,1fr); }
+  .product-card,.yc-menu-product { min-width: 0; }
+  .header-inner { gap: 9px; }
+  .header-actions { gap: 7px; }
+  .brand b { font-size: 13px; }
+  .brand small { font-size: 7px; letter-spacing: .1em; }
+  .hero-actions .btn { width: 100%; }
+  .yc6-cart .yc6-paper { padding: 16px; }
+  .yc10-availability .filters { grid-template-columns: minmax(0,1fr); }
+  .yc10-availability .grid { gap: 8px; }
+  .yc10-availability .table { padding: 11px 8px; }
+  .staff-main { padding-inline: 12px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important; transition-duration: .01ms !important; }
+  html { scroll-behavior: auto; }
+}
+@media print {
+  .site-header,.staff-aside,.staff-top,.yc-boot,.yc-boot--leaving,
+  .yc-staff-foot,.no-print { display: none !important; }
+  body { background: #fff !important; color:#111 !important; }
+  .staff-workspace, .staff-main { display:block; width:100%; margin:0; padding:0; }
+  a { color:inherit; }
+}

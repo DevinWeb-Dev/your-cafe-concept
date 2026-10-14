@@ -1,0 +1,216 @@
+/* =========================================================
+   YOUR CAFÉ — HOSPITALITY OPERATIONS DESIGN
+   FILE: src/styles/staff.css
+   Loads AFTER base.css and public.css.
+   Only styles the existing .staff-app dashboard UI.
+   ========================================================= */
+
+.staff-app {
+  --yc-staff-ink: #efe6db;
+  --yc-staff-muted: #ad9d8d;
+  --yc-staff-border: rgba(215, 183, 145, .14);
+  --yc-staff-panel: #2f2823;
+  min-height: 100vh;
+  color: var(--yc-staff-ink);
+  background: radial-gradient(ellipse at 90% 4%, rgba(167, 114, 71, .09), transparent 38%), #211b17;
+}
+.staff-app * { min-width: 0; }
+.staff-app .staff-aside {
+  background: linear-gradient(170deg, #30231c, #201914 80%);
+  border-right: 1px solid var(--yc-staff-border);
+  box-shadow: 10px 0 44px rgba(20, 10, 5, .08);
+}
+.staff-app .staff-brand { padding-block: 14px; border-bottom: 1px solid var(--yc-staff-border); }
+.staff-app .staff-brand .brand-symbol {
+  color: #f0d4ab;
+  border: 1px solid rgba(190,146,91,.27);
+  background: #493323;
+}
+.staff-app .staff-label { color: #bfa58a; letter-spacing: .18em; font-size: 9px; }
+.staff-app .staff-aside nav { display: flex; flex-direction: column; gap: 5px; }
+.staff-app .staff-aside nav a {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 46px;
+  padding: 12px 14px;
+  border-radius: 9px;
+  border: 1px solid transparent;
+  color: #c2b3a2;
+  font-size: 12px;
+  transition: border-color .3s ease, color .3s, transform .3s var(--yc-ease), background .3s;
+}
+.staff-app .staff-aside nav a svg { flex-shrink: 0; color: #ad8c66; }
+.staff-app .staff-aside nav a:hover { color: #fff; background: rgba(181,139,90,.105); border-color: rgba(181,139,90,.17); transform: translateX(3px); }
+.staff-app .staff-aside nav a.active { color: #f7e6d0; background: linear-gradient(100deg,rgba(181,139,90,.20),rgba(181,139,90,.04)); border-left: 2px solid #c6a479; }
+.staff-app .side-note { color: #a48d77; line-height: 1.75; }
+.staff-app .return-site { color: #d0b18d; }
+
+/* --- Top navigation and hierarchy --- */
+.staff-app .staff-top {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  background: rgba(40,31,26,.93);
+  border-bottom: 1px solid var(--yc-staff-border);
+}
+.staff-app .staff-top > span { font-weight: 800; letter-spacing: .13em; color: #bea993; }
+.staff-app .staff-live { color: #e6c69d; transition: color .2s; }
+.staff-app .staff-live:hover { color: #fff; }
+.staff-app .staff-main { min-width: 0; overflow: clip; }
+.staff-app .staff-heading { gap: 22px; }
+.staff-app .staff-heading .eyebrow { color: #bd9874; }
+.staff-app .staff-heading h1 {
+  margin: 13px 0 10px;
+  font: 500 clamp(43px, 5.2vw, 77px)/.92 var(--yc-font-display);
+  letter-spacing: -.028em;
+  text-wrap: balance;
+  overflow-wrap: anywhere;
+}
+.staff-app .staff-heading p { max-width: 710px; color: #b2a395; font-size: 12px; line-height: 1.85; }
+
+/* --- Command-center cards; no neon or gimmicks --- */
+.staff-app .stats-grid { align-items: stretch; }
+.staff-app .stat-card {
+  position: relative;
+  overflow: hidden;
+  min-width: 0;
+  border: 1px solid var(--yc-staff-border);
+  background: linear-gradient(150deg, #382d25, #29211c);
+  border-radius: 13px;
+  box-shadow: 0 16px 43px rgba(12, 7, 4, .16);
+  transition: transform .35s var(--yc-ease), border-color .35s, box-shadow .35s;
+}
+.staff-app .stat-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto auto 0;
+  width: 100%; height: 2px;
+  background: linear-gradient(90deg, transparent, #b58b5a, transparent);
+  opacity: .7;
+}
+.staff-app .stat-card:hover { transform: translateY(-5px); border-color: rgba(181,139,90,.4); box-shadow: 0 23px 55px rgba(0,0,0,.19); }
+.staff-app .stat-card > small { font-size: 10px; letter-spacing: .11em; color: #b9a38c; }
+.staff-app .stat-card > b { font: 600 clamp(29px,3vw,45px)/1 var(--yc-font-display); color: #f7e9d6; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.staff-app .stat-card > span { font-size: 11px; color: #aa9681; line-height: 1.65; }
+.staff-app .staff-panel,
+.staff-app .queue-card,
+.staff-app .table-control,
+.staff-app .inventory-card {
+  min-width: 0;
+  border: 1px solid var(--yc-staff-border);
+  border-radius: 13px;
+  background: linear-gradient(160deg, #362b24, #29221d);
+  box-shadow: 0 14px 40px rgba(10, 5, 3, .12);
+}
+.staff-app .staff-panel h2,
+.staff-app .table-control h2 { color: #f0dec8; font-family: var(--yc-font-display); }
+.staff-app .staff-panel p { color: #b6a494; }
+.staff-app .activity-line {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 9px;
+  padding-block: 13px;
+  border-bottom: 1px solid rgba(235,208,175,.085);
+}
+.staff-app .activity-line:last-child { border-bottom: 0; }
+.staff-app .activity-line b, .staff-app .activity-line strong { color: #f2e5d3; }
+.staff-app .activity-line span,.staff-app .activity-line small { color: #ad9b88; }
+
+/* --- Floor management and clear table state --- */
+.staff-app .floor-layout { align-items: start; gap: clamp(14px,2vw,28px); }
+.staff-app .floor-legend { flex-wrap: wrap; gap: 10px 17px; }
+.staff-app .floor-legend span { font-size: 11px; color: #c0ae9c; }
+.staff-app .table-control {
+  position: sticky;
+  top: 90px;
+  padding: clamp(20px, 2.3vw, 30px);
+}
+.staff-app .table-control .eyebrow { color: #c7a57d; }
+.staff-app .table-control > h2 { font-size: clamp(42px, 4vw, 61px); margin: 15px 0 5px; }
+.staff-app .table-control > p { color: #ae9b87; }
+.staff-app .table-checkin label,
+.staff-app .table-control label { display: block; font-size: 10px; letter-spacing: .07em; color: #c5ae93; }
+.staff-app .table-control input {
+  display: block;
+  width: 100%;
+  min-height: 44px;
+  margin-block: 8px 16px;
+  padding: 10px 13px;
+  border-radius: 7px;
+  border: 1px solid rgba(221,184,139,.25);
+  background: #251e19;
+  color: #fff0df;
+}
+.staff-app .table-control input:focus { outline: 2px solid #b58b5a; outline-offset: 2px; }
+.staff-app .visit-details { display: grid; gap: 11px; }
+.staff-app .visit-details > div { display: flex; justify-content: space-between; gap: 15px; padding: 13px 0; border-bottom: 1px solid var(--yc-staff-border); }
+.staff-app .visit-details b { color: #f0e0cd; overflow-wrap: anywhere; }
+.staff-app .visit-details small { color: #aa977f; }
+
+/* --- Barista queue and preparation action buttons --- */
+.staff-app .order-board { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(280px,100%), 1fr)); gap: 18px; }
+.staff-app .queue-card { padding: 23px; transition: border-color .3s, transform .3s var(--yc-ease); }
+.staff-app .queue-card:hover { transform: translateY(-4px); border-color: rgba(181,139,90,.4); }
+.staff-app .queue-head { display: flex; justify-content: space-between; flex-wrap: wrap; align-items: center; gap: 8px; padding-bottom: 17px; border-bottom: 1px solid var(--yc-staff-border); }
+.staff-app .queue-head > small { color: #bba58d; letter-spacing: .06em; overflow-wrap: anywhere; }
+.staff-app .queue-card h3 { font: 500 37px/1 var(--yc-font-display); color: #f0e4d4; margin-block: 20px 9px; }
+.staff-app .queue-card > p { color: #ad9986; font-size: 11px; }
+.staff-app .queue-lines { margin: 22px 0; }
+.staff-app .queue-lines > div { display: flex; flex-direction: column; gap: 6px; padding-block: 11px; border-bottom: 1px solid rgba(215,183,145,.1); }
+.staff-app .queue-lines b { font-size: 12px; color: #f0e1ce; overflow-wrap: anywhere; }
+.staff-app .queue-lines small { font-size: 10px; color: #b9a18a; overflow-wrap: anywhere; }
+.staff-app .queue-total { display: flex; justify-content: space-between; gap: 15px; align-items: center; padding-bottom: 15px; color: #ae9983; font-size: 10px; }
+.staff-app .queue-total strong { color: #f0dcc3; font-size: 17px; }
+.staff-app .queue-card .btn { max-width: 100%; margin-top: 9px; }
+.staff-app .paid-note { display: flex; align-items: center; gap: 9px; color: #a9c2a2; }
+
+/* --- Responsive inventory and readable management tables --- */
+.staff-app .inventory-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(205px,100%), 1fr)); gap: 15px; }
+.staff-app .inventory-card { padding: 19px; }
+.staff-app .inventory-card h3 { color: #f0dec8; overflow-wrap: anywhere; }
+.staff-app .inventory-card p { color: #b19c86; }
+.staff-app .table-responsive { max-width: 100%; overflow-x: auto; overscroll-behavior-inline: contain; }
+.staff-app .table-responsive table { min-width: 690px; border-collapse: collapse; }
+.staff-app .table-responsive :where(th,td) { padding: 12px 13px; border-bottom: 1px solid var(--yc-staff-border); font-size: 11px; white-space: normal; overflow-wrap: anywhere; }
+.staff-app .table-responsive th { color: #d2b18a; font-size: 9px; letter-spacing: .1em; text-align: left; }
+.staff-app .table-responsive td { color: #dbcbba; }
+.staff-app :where(.mini-action,button.btn) { transition: transform .25s var(--yc-ease), box-shadow .25s, background .25s; }
+.staff-app :where(.mini-action,button.btn):hover:not(:disabled) { transform: translateY(-2px); }
+.staff-app .btn-primary { background: #9f7652; border-color: #9f7652; color: #fff; }
+.staff-app .btn-primary:hover { background: #b18c67; }
+.staff-app .btn-outline { border-color: rgba(233,204,168,.36); color: #f0e4d5; }
+.staff-app .btn-outline:hover { background: rgba(181,139,90,.13); }
+.staff-app .status-chip { overflow-wrap: anywhere; font-size: 9px; letter-spacing: .045em; }
+.staff-app .mobile-shade { background: rgba(13,8,5,.75); backdrop-filter: blur(5px); }
+
+/* --- Multi-device and interaction preference --- */
+@media (max-width: 1080px) { .staff-app .table-control { position: static; } }
+@media (max-width: 760px) {
+  .staff-app .staff-main { padding: 19px 15px 50px; }
+  .staff-app .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 11px; }
+  .staff-app .stat-card { padding: 20px 16px; }
+  .staff-app .staff-heading h1 { font-size: clamp(42px,9vw,65px); }
+  .staff-app .order-board { grid-template-columns: 1fr; }
+  .staff-app .staff-columns { grid-template-columns: 1fr; }
+  .staff-app .floor-layout { grid-template-columns: 1fr; }
+  .staff-app .table-control { position: static; }
+}
+@media (max-width: 390px) {
+  .staff-app .stats-grid { grid-template-columns: 1fr; }
+  .staff-app .staff-top > span { display: none; }
+  .staff-app .staff-heading h1 { font-size: 40px; }
+}
+@media (hover: none) {
+  .staff-app .stat-card:hover,
+  .staff-app .queue-card:hover,
+  .staff-app .staff-aside nav a:hover { transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .staff-app *, .staff-app *::before, .staff-app *::after { transition-duration: .01ms !important; }
+  .staff-app .stat-card:hover,.staff-app .queue-card:hover { transform: none; }
+}

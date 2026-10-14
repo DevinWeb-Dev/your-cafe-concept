@@ -1,0 +1,53 @@
+// YOUR CAFÉ — PART 10 | src/pages/public/LocationsPage.jsx
+// Never invent a physical location: only configured branch/contact values are shown.
+import { useMemo, useState } from "react";
+import { Link } from "react-router-dom";
+import { ArrowRight, ArrowUpRight, Clock3, Coffee, Compass, Copy, Leaf, MapPin, Navigation, Phone, Check, Sun, Armchair } from "lucide-react";
+import { BRAND, PHOTOS, SEATING_ZONES } from "../../data/config.js";
+
+const PLACEHOLDER_ADDRESS = /^(your |add |tbd|to be|not yet|placeholder)/i;
+const isRealAddress = (s) => Boolean(typeof s === "string" && s.trim() && !PLACEHOLDER_ADDRESS.test(s.trim()));
+const isUsablePhone = (s) => typeof s === "string" && /^\+?[\d\s()-]{7,}$/.test(s.trim()) && /\d{7}/.test(s.replace(/\D/g, ""));
+
+export default function LocationsPage() {
+  const branches = useMemo(() => {
+    const configured = Array.isArray(BRAND.branches) ? BRAND.branches : [];
+    const rows = configured.length ? configured : [{ id: "flagship", name: BRAND.name, address: BRAND.address, hours: BRAND.openingHours, phone: BRAND.phone, photo: PHOTOS.cafeInterior }];
+    return rows.map((x, i) => ({ id: x.id || `branch-${i}`, name: x.name || BRAND.name, address: x.address || "Address to be announced", hours: x.hours || BRAND.openingHours || "Hours to be confirmed", phone: x.phone || BRAND.phone || "", photo: x.photo || PHOTOS.cafeInterior }));
+  }, []);
+  const [selectedId, setSelectedId] = useState(branches[0]?.id || "");
+  const [copied, setCopied] = useState(false);
+  const [imageFailed, setImageFailed] = useState(false);
+  const selected = branches.find(x => x.id === selectedId) || branches[0];
+  const configuredAddress = isRealAddress(selected?.address);
+  const directionsUrl = configuredAddress ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(selected.address)}` : null;
+  const phoneLink = isUsablePhone(selected?.phone) ? `tel:${selected.phone.replace(/[^\d+]/g, "")}` : null;
+  async function copyAddress() {
+    if (!configuredAddress) return;
+    try { await navigator.clipboard.writeText(selected.address); setCopied(true); window.setTimeout(()=>setCopied(false),2100); }
+    catch { setCopied(false); }
+  }
+  return <div className="yc10-locations">
+    <style>{`
+      .yc10-locations{background:#faf5ec;color:#37271e;overflow:hidden}.yc10-locations *{box-sizing:border-box}.yc10-locations .wrap{width:min(1270px,calc(100% - 52px));margin:auto}.yc10-locations .ey{color:#a1774a;font:800 10px/1.5 'DM Sans',sans-serif;letter-spacing:.18em;text-transform:uppercase}
+      .yc10-locations h1,.yc10-locations h2,.yc10-locations h3{font-family:'Cormorant Garamond',Georgia,serif;font-weight:500;letter-spacing:-.045em;text-wrap:balance}.yc10-locations .hero10{min-height:470px;background:linear-gradient(90deg,#21160fee,#21160f77),url('${PHOTOS.interior}') center/cover;display:flex;align-items:center;color:white;padding:80px 0}.yc10-locations .hero10 .ey{color:#dec5a5}.yc10-locations .hero10 h1{font-size:clamp(70px,10vw,135px);line-height:.86;margin:22px 0}.yc10-locations .hero10 h1 em{color:#dec09c}.yc10-locations .hero10 p{max-width:490px;color:#efe1d0;font-size:13px;line-height:1.9}
+      .yc10-locations .section10{padding:92px 0}.yc10-locations .intro{display:flex;align-items:end;justify-content:space-between;gap:25px;margin-bottom:35px}.yc10-locations .intro h2{font-size:clamp(48px,6.5vw,82px);line-height:.92;margin:13px 0}.yc10-locations .intro p{max-width:350px;font-size:12px;line-height:1.9;color:#82705f}
+      .yc10-locations .branch-tabs{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:28px}.yc10-locations .branch-tabs button{padding:11px 17px;background:#fffaf3;border:1px solid #dccab5;color:#6b5543;font-size:11px;font-weight:800;min-height:45px}.yc10-locations .branch-tabs button[aria-selected=true]{background:#3d2a1f;border-color:#3d2a1f;color:#fff}
+      .yc10-locations .detail{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr);gap:0;box-shadow:0 24px 65px #3b28121b;min-height:495px}.yc10-locations .visual{position:relative;min-height:490px;background:#6b4532}.yc10-locations .visual img{width:100%;height:100%;object-fit:cover;position:absolute;inset:0}.yc10-locations .visual-fallback{display:grid;place-content:center;text-align:center;height:100%;color:#f2d5b0;gap:12px}.yc10-locations .visual-tag{position:absolute;left:26px;bottom:27px;background:#faf5ec;color:#5e4332;padding:11px 15px;font-size:9px;font-weight:800;letter-spacing:.15em}
+      .yc10-locations .info{padding:clamp(26px,4vw,57px);background:#fffaf3;display:flex;flex-direction:column;justify-content:center;min-width:0}.yc10-locations .info h3{font-size:clamp(45px,4.7vw,68px);line-height:.95;margin:16px 0 26px}.yc10-locations .line{display:flex;gap:15px;align-items:flex-start;border-top:1px solid #eadfd1;padding:18px 0}.yc10-locations .line svg{flex-shrink:0;color:#a97a49}.yc10-locations .line div{min-width:0}.yc10-locations .line b{display:block;font-size:10px;letter-spacing:.11em;margin-bottom:6px}.yc10-locations .line span{font-size:12px;color:#7b6858;overflow-wrap:anywhere;line-height:1.75}
+      .yc10-locations .buttons{display:flex;flex-wrap:wrap;gap:10px;margin-top:19px}.yc10-locations .buttons a,.yc10-locations .buttons button{border:1px solid #b89a76;background:#3b2a20;color:white;min-height:46px;padding:13px 16px;display:inline-flex;align-items:center;justify-content:center;gap:10px;font:800 11px 'DM Sans',sans-serif;line-height:1.4}.yc10-locations .buttons .outline{background:transparent;color:#5e4634}.yc10-locations .buttons button:disabled{opacity:.55;cursor:not-allowed}
+      .yc10-locations .notice{padding:15px 17px;background:#ece2d6;font-size:11px;line-height:1.8;color:#75634f;margin-top:24px}.yc10-locations .zones{padding:80px 0 100px;background:#e9dfd1}.yc10-locations .zones h2{font-size:clamp(47px,6vw,81px);margin:15px 0 40px;line-height:.94}.yc10-locations .zones-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:17px}.yc10-locations .zone{background:#fffaf2;padding:27px;border-top:3px solid var(--zone-accent,#b58b5a);min-width:0}.yc10-locations .zone h3{font-size:31px;line-height:1;margin:17px 0 9px}.yc10-locations .zone p{font-size:12px;line-height:1.8;color:#807062}.yc10-locations .zone small{font-size:10px;font-weight:800;letter-spacing:.1em;color:#9b7a56}
+      .yc10-locations .zones-cta{display:inline-flex;align-items:center;gap:12px;margin-top:35px;font-size:12px;font-weight:800;border-bottom:1px solid #a58565;padding-bottom:10px}
+      @media(max-width:920px){.yc10-locations .detail{grid-template-columns:1fr}.yc10-locations .visual{min-height:340px}.yc10-locations .zones-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:600px){.yc10-locations .wrap{width:calc(100% - 32px)}.yc10-locations .hero10{min-height:395px;padding:70px 0}.yc10-locations .hero10 h1{font-size:clamp(65px,14vw,85px)}.yc10-locations .section10{padding:68px 0}.yc10-locations .intro{display:block}.yc10-locations .visual{min-height:270px}.yc10-locations .info{padding:26px 21px}.yc10-locations .zones-grid{grid-template-columns:1fr}.yc10-locations .zones{padding:65px 0}}
+    `}</style>
+    <section className="hero10"><div className="wrap"><span className="ey">YOUR CAFÉ / THE PLACES WE IMAGINE</span><h1>Find your<br/><em>coffee moment.</em></h1><p>Explore the ambience, seating and configured location details of our café concept—warm spaces for every kind of day.</p></div></section>
+    <section className="section10"><div className="wrap"><div className="intro"><div><span className="ey">VISIT US</span><h2>Come as you are.<br/><em>Stay a little.</em></h2></div><p>Discover our sample café destination. Branch addresses and opening hours should be replaced with verified business information before launch.</p></div>
+      {branches.length > 1 && <div className="branch-tabs" role="tablist" aria-label="Cafe branches">{branches.map((b)=><button key={b.id} type="button" role="tab" aria-selected={selectedId===b.id} onClick={()=>{setSelectedId(b.id);setImageFailed(false)}}>{b.name}</button>)}</div>}
+      <div className="detail"><div className="visual">{imageFailed ? <div className="visual-fallback"><Coffee size={54}/><span>THE CAFÉ EXPERIENCE</span></div> : <img src={selected.photo} alt="Illustrative café interior (not necessarily the actual branch)" loading="lazy" onError={()=>setImageFailed(true)}/>}<span className="visual-tag">ILLUSTRATIVE CAFÉ VISUAL</span></div>
+        <div className="info"><span className="ey">COME VISIT</span><h3>{selected.name}</h3><div className="line"><MapPin size={21}/><div><b>LOCATION</b><span>{configuredAddress ? selected.address : "Address to be confirmed by the café owner"}</span></div></div><div className="line"><Clock3 size={21}/><div><b>OPENING HOURS</b><span>{selected.hours}</span></div></div><div className="line"><Phone size={21}/><div><b>CONTACT</b><span>{phoneLink ? selected.phone : "Contact details to be provided"}</span></div></div>
+        <div className="buttons">{directionsUrl ? <a href={directionsUrl} target="_blank" rel="noopener noreferrer"><Navigation size={15}/> OPEN DIRECTIONS <ArrowUpRight size={15}/></a> : <button type="button" disabled><Navigation size={15}/> DIRECTIONS UNAVAILABLE</button>}{configuredAddress && <button className="outline" type="button" onClick={copyAddress}>{copied ? <Check size={15}/> : <Copy size={15}/>} {copied ? "COPIED" : "COPY ADDRESS"}</button>}<Link className="outline" to="/contact">INQUIRE <ArrowRight size={15}/></Link></div></div></div>
+      <p className="notice">This page is a client-ready layout concept. No real branch location is asserted until the owner supplies an address in <code>src/data/config.js</code>. Directions only appear when an address has been configured.</p>
+    </div></section>
+    <section className="zones"><div className="wrap"><span className="ey">FIND YOUR KIND OF SPACE</span><h2>Every seat has<br/><em>its own story.</em></h2><div className="zones-grid">{SEATING_ZONES.map((z,i)=><article className="zone" key={z.id} style={{"--zone-accent":z.color}}><span style={{display:"flex",alignItems:"center",gap:10,color:z.color}}>{i%2===0?<Leaf size={24}/>:<Armchair size={24}/>}<small>ZONE {String(i+1).padStart(2,"0")}</small></span><h3>{z.name}</h3><p>{z.description}</p><small>{z.count} SEATING UNITS · UP TO {z.capacity} PER UNIT</small></article>)}</div><Link to="/availability" className="zones-cta">Explore our table availability <ArrowRight size={17}/></Link><p style={{fontSize:10,color:"#837260",marginTop:36}}><Sun size={12} style={{display:"inline",verticalAlign:"middle"}}/> {BRAND.watermark}</p></div></section>
+  </div>;
+}
