@@ -1,0 +1,1802 @@
+/* ============================================
+   YOUR CAFÉ. — BATCH 04
+   THE OPERATIONS JOURNAL
+
+   Dedicated staff design system.
+   Preserves original operational logic.
+============================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700;800&family=Fraunces:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap');
+
+/* ============================================
+   01 / STAFF DESIGN TOKENS
+============================================ */
+
+.staff-app.cj4-studio {
+  --c4-ink: #291c19;
+  --c4-berry: #a84342;
+  --c4-dark: #211918;
+  --c4-paper: #faf5ec;
+  --c4-sand: #f0e6d7;
+  --c4-white: #fffaf3;
+  --c4-leaf: #b6bc91;
+  --c4-line: #dccdba;
+  --c4-muted: #79685e;
+
+  --c4-serif: "Fraunces", Georgia, serif;
+  --c4-body: "DM Sans", sans-serif;
+  --c4-mono: "DM Mono", monospace;
+
+  display: grid;
+  grid-template-columns: 252px minmax(0, 1fr);
+
+  min-height: 100dvh;
+
+  background: var(--c4-paper);
+  color: var(--c4-ink);
+
+  font-family: var(--c4-body);
+}
+
+.cj4-studio * {
+  box-sizing: border-box;
+}
+
+.cj4-studio :where(
+  input,
+  select,
+  textarea,
+  button
+) {
+  font-family: var(--c4-body);
+}
+
+.cj4-studio :where(
+  a,
+  button,
+  input,
+  select,
+  textarea
+):focus-visible {
+  outline: 3px solid var(--c4-berry);
+  outline-offset: 3px;
+}
+
+.cj4-studio a {
+  text-decoration: none;
+}
+
+/* ============================================
+   02 / DARK ROAST SIDEBAR
+============================================ */
+
+.cj4-studio .cj4-sidebar {
+  position: sticky;
+  top: 0;
+
+  align-self: start;
+
+  display: flex;
+  flex-direction: column;
+
+  height: 100dvh;
+
+  overflow-y: auto;
+  overscroll-behavior: contain;
+
+  background: var(--c4-dark);
+  color: #f9f0e4;
+
+  border-right: 1px solid #ffffff20;
+  z-index: 90;
+}
+
+.cj4-sidebar-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+
+  padding: 28px 21px 23px;
+
+  border-bottom: 1px solid #ffffff25;
+}
+
+.cj4-identity {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  min-width: 0;
+
+  color: #fff7e9;
+}
+
+.cj4-identity-symbol {
+  display: grid;
+  place-items: center;
+
+  width: 43px;
+  height: 43px;
+
+  flex-shrink: 0;
+
+  background: var(--c4-berry);
+  border-radius: 50% 50% 40% 40%;
+
+  transform: rotate(-10deg);
+}
+
+.cj4-identity > span:last-child {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+
+.cj4-identity strong {
+  font-size: 18px;
+  letter-spacing: -.075em;
+  white-space: nowrap;
+  line-height: 1;
+}
+
+.cj4-identity strong span {
+  color: #eaa794;
+}
+
+.cj4-identity small {
+  font: 400 8px/1.3 var(--c4-mono);
+  letter-spacing: -.025em;
+  color: #c6b4a5;
+  white-space: nowrap;
+}
+
+.cj4-close {
+  display: none;
+
+  background: none;
+  border: 0;
+  color: white;
+  padding: 8px;
+}
+
+.cj4-sidebar-intro {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+
+  padding: 21px 22px;
+
+  color: #bf9e8c;
+  font: 400 8px/1.5 var(--c4-mono);
+
+  border-bottom: 1px solid #ffffff1c;
+}
+
+.cj4-online-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+
+  flex-shrink: 0;
+
+  background: var(--c4-leaf);
+  box-shadow: 0 0 0 4px #b6bc9123;
+}
+
+/* SIDEBAR NAVIGATION */
+
+.cj4-navigation {
+  padding: 10px 13px 26px;
+}
+
+.cj4-navigation-group {
+  margin-top: 21px;
+}
+
+.cj4-navigation-group > p {
+  margin: 0 10px 10px;
+
+  color: #c6998d;
+
+  font: 500 9px var(--c4-mono);
+  letter-spacing: .07em;
+}
+
+.cj4-studio .cj4-nav-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  min-height: 43px;
+  margin: 2px 0;
+  padding: 11px 12px;
+
+  border-left: 2px solid transparent;
+  border-radius: 0;
+
+  color: #d5c5b7;
+
+  font: 600 12px/1.35 var(--c4-body);
+
+  transition:
+    background .2s,
+    color .2s;
+}
+
+.cj4-nav-link svg {
+  flex-shrink: 0;
+  color: #b7a79c;
+}
+
+.cj4-nav-link span {
+  flex: 1;
+}
+
+.cj4-nav-link > small {
+  padding: 4px 7px;
+
+  background: #a8434240;
+  color: #f8d6c6;
+
+  font: 500 10px var(--c4-mono);
+}
+
+.cj4-nav-arrow {
+  opacity: .3;
+}
+
+.cj4-studio .cj4-nav-link:hover {
+  background: #ffffff0b;
+  color: white;
+}
+
+.cj4-studio .cj4-nav-link.is-active {
+  background: #a8434236;
+  color: #fff4e8;
+
+  border-left-color: #dc8275;
+}
+
+/* SIDEBAR OCCUPANCY */
+
+.cj4-sidebar-bottom {
+  margin-top: auto;
+  padding: 21px;
+
+  border-top: 1px solid #ffffff20;
+}
+
+.cj4-sidebar-occupancy {
+  display: grid;
+  gap: 9px;
+
+  padding: 20px 17px;
+
+  background: #ffffff0a;
+  border: 1px solid #ffffff20;
+}
+
+.cj4-sidebar-occupancy > span {
+  color: #d9a995;
+
+  font: 400 9px var(--c4-mono);
+}
+
+.cj4-sidebar-occupancy > strong {
+  color: #fff1e3;
+
+  font: 500 49px/1 var(--c4-serif);
+}
+
+.cj4-sidebar-occupancy strong i {
+  color: #a58e80;
+
+  font: 400 19px var(--c4-serif);
+}
+
+.cj4-sidebar-occupancy small {
+  color: #cdb8a7;
+
+  font: 400 10px/1.6 var(--c4-body);
+}
+
+.cj4-meter {
+  height: 5px;
+
+  overflow: hidden;
+  background: #ffffff28;
+}
+
+.cj4-meter > span {
+  display: block;
+  height: 100%;
+
+  background: var(--c4-leaf);
+}
+
+.cj4-studio .cj4-back-to-site {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 9px;
+
+  padding: 19px 0;
+
+  border-bottom: 1px solid #ffffff20;
+  color: #f2ded1;
+
+  font: 500 9px/1.5 var(--c4-mono);
+}
+
+.cj4-sidebar-bottom > p {
+  color: #a98d7e;
+
+  font: 400 10px/1.7 var(--c4-body);
+}
+
+/* ============================================
+   03 / TOPBAR AND MAIN WORKSPACE
+============================================ */
+
+.cj4-content {
+  min-width: 0;
+
+  display: flex;
+  flex-direction: column;
+
+  min-height: 100dvh;
+}
+
+.cj4-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 55;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+
+  min-height: 81px;
+
+  padding:
+    13px
+    clamp(21px, 3.4vw, 53px);
+
+  background: #faf5eced;
+
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--c4-line);
+}
+
+.cj4-topbar-left,
+.cj4-topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 17px;
+
+  min-width: 0;
+}
+
+.cj4-topbar-left > div {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.cj4-topbar-left > div > span {
+  color: var(--c4-berry);
+
+  font: 400 9px var(--c4-mono);
+}
+
+.cj4-topbar-left > div > span i {
+  font-style: normal;
+  color: var(--c4-muted);
+}
+
+.cj4-topbar-left > div > strong {
+  font: 700 16px var(--c4-body);
+  letter-spacing: -.035em;
+}
+
+.cj4-clock,
+.cj4-daily-tally {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  color: var(--c4-muted);
+
+  font: 400 9px var(--c4-mono);
+  white-space: nowrap;
+}
+
+.cj4-daily-tally strong {
+  color: var(--c4-ink);
+  font-size: 12px;
+}
+
+.cj4-studio .cj4-new-ticket {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  padding: 14px 15px;
+
+  white-space: nowrap;
+
+  background: var(--c4-ink);
+  color: white;
+
+  font: 500 9px var(--c4-mono);
+}
+
+.cj4-studio .cj4-new-ticket:hover {
+  background: var(--c4-berry);
+}
+
+.cj4-hamburger {
+  display: none;
+  place-items: center;
+
+  width: 42px;
+  height: 42px;
+
+  background: transparent;
+  border: 1px solid var(--c4-ink);
+  color: var(--c4-ink);
+}
+
+.cj4-studio .staff-main.cj4-main {
+  width: 100%;
+  max-width: none;
+  min-width: 0;
+  flex: 1;
+
+  overflow: visible;
+
+  padding:
+    clamp(22px, 3.4vw, 53px);
+
+  background: var(--c4-paper);
+  color: var(--c4-ink);
+}
+
+.cj4-workspace-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+
+  padding:
+    22px
+    clamp(22px, 3.4vw, 53px);
+
+  border-top: 1px solid var(--c4-line);
+  color: var(--c4-muted);
+
+  font: 400 9px/1.6 var(--c4-mono);
+}
+
+.cj4-backdrop {
+  display: none;
+}
+
+/* STAFF NOTIFICATIONS */
+
+.cj4-notice {
+  position: fixed;
+  z-index: 300;
+
+  bottom: 20px;
+  right: 20px;
+
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  max-width: min(
+    460px,
+    calc(100vw - 28px)
+  );
+
+  padding: 16px 17px;
+
+  background: #e0eddc;
+  border-left: 4px solid #5a7856;
+
+  color: #2d4c30;
+
+  box-shadow: 0 20px 55px #291c1928;
+
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+.cj4-notice.is-error {
+  background: #f6e1d9;
+  border-color: #ae5048;
+  color: #7e2e2a;
+}
+
+.cj4-notice > span {
+  flex: 1;
+}
+
+.cj4-notice button {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  padding: 4px;
+}
+
+/* ============================================
+   04 / EDITORIAL DASHBOARD HERO
+============================================ */
+
+.cj4-dashboard {
+  min-width: 0;
+
+  display: grid;
+  gap: 23px;
+}
+
+.cj4-dashboard-hero {
+  display: grid;
+  grid-template-columns: 1.2fr .8fr;
+
+  min-height: 380px;
+
+  overflow: hidden;
+  background: var(--c4-sand);
+}
+
+.cj4-dashboard-hero > div:first-child {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+
+  min-width: 0;
+
+  padding:
+    clamp(30px, 4.2vw, 69px);
+}
+
+.cj4-eyebrow {
+  color: var(--c4-berry);
+
+  font: 500 10px/1.5 var(--c4-mono);
+  letter-spacing: .025em;
+}
+
+.cj4-dashboard-hero h1 {
+  margin: 26px 0 21px;
+
+  font: 500
+    clamp(59px, 6vw, 97px)/.94
+    var(--c4-serif);
+
+  letter-spacing: -.085em;
+}
+
+.cj4-dashboard-hero h1 em,
+.cj4-panel h2 em {
+  color: var(--c4-berry);
+  font-weight: 400;
+}
+
+.cj4-dashboard-hero p {
+  max-width: 495px;
+  margin: 0;
+
+  color: #66544c;
+
+  font: 500 12px/1.9 var(--c4-body);
+}
+
+.cj4-dashboard-actions {
+  display: flex;
+  gap: 9px;
+  flex-wrap: wrap;
+
+  margin-top: 27px;
+}
+
+.cj4-studio .cj4-dashboard-actions > a {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+
+  padding: 14px 17px;
+
+  background: var(--c4-ink);
+  color: white;
+
+  font: 500 9px var(--c4-mono);
+}
+
+.cj4-studio .cj4-dashboard-actions > a + a {
+  border: 1px solid var(--c4-ink);
+
+  background: transparent;
+  color: var(--c4-ink);
+}
+
+.cj4-dashboard-hero-art {
+  position: relative;
+  isolation: isolate;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+
+  padding: 35px;
+
+  overflow: hidden;
+
+  background: var(--c4-berry);
+  color: #fff4e6;
+
+  text-align: center;
+}
+
+.cj4-dashboard-hero-art::before {
+  content: "✳";
+
+  position: absolute;
+  z-index: -1;
+
+  font: 400 430px/1 var(--c4-serif);
+  color: #ffffff1b;
+
+  transform: rotate(-25deg);
+}
+
+.cj4-dashboard-hero-art > span,
+.cj4-dashboard-hero-art > small {
+  font: 400 9px/1.5 var(--c4-mono);
+}
+
+.cj4-dashboard-hero-art > strong {
+  font: 500
+    clamp(45px, 4.2vw, 72px)/.93
+    var(--c4-serif);
+
+  letter-spacing: -.07em;
+}
+
+/* ============================================
+   05 / DAILY METRIC CARDS
+============================================ */
+
+.cj4-dashboard-intro {
+  display: flex;
+  justify-content: space-between;
+  gap: 15px;
+  flex-wrap: wrap;
+
+  padding-top: 15px;
+
+  border-top: 1px solid var(--c4-ink);
+  color: var(--c4-berry);
+
+  font: 400 9px var(--c4-mono);
+}
+
+.cj4-metric-grid {
+  display: grid;
+  grid-template-columns:
+    repeat(4, minmax(0, 1fr));
+
+  gap: 12px;
+}
+
+.cj4-metric {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+
+  min-width: 0;
+  min-height: 168px;
+
+  padding: 22px;
+
+  background: var(--c4-white);
+  border: 1px solid var(--c4-line);
+}
+
+.cj4-metric-feature {
+  background: var(--c4-leaf);
+}
+
+.cj4-metric-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 11px;
+
+  color: #7d544d;
+
+  font: 500 9px/1.6 var(--c4-mono);
+}
+
+.cj4-metric > strong {
+  font: 500
+    clamp(29px, 3vw, 43px)/1
+    var(--c4-serif);
+
+  letter-spacing: -.06em;
+  overflow-wrap: anywhere;
+}
+
+.cj4-metric > small {
+  margin-top: auto;
+
+  color: var(--c4-muted);
+
+  font: 400 10px/1.6 var(--c4-body);
+}
+
+/* ============================================
+   06 / DASHBOARD PANELS
+============================================ */
+
+.cj4-dash-main-grid {
+  display: grid;
+  grid-template-columns:
+    minmax(0, 1.48fr)
+    minmax(285px, .78fr);
+
+  align-items: start;
+  gap: 18px;
+}
+
+.cj4-dash-primary,
+.cj4-dash-side {
+  display: grid;
+  gap: 18px;
+
+  min-width: 0;
+}
+
+.cj4-panel {
+  min-width: 0;
+
+  padding: clamp(
+    22px,
+    2.8vw,
+    35px
+  );
+
+  background: var(--c4-white);
+  border: 1px solid var(--c4-line);
+}
+
+.cj4-panel-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+
+  padding-bottom: 19px;
+
+  border-bottom: 1px solid var(--c4-ink);
+  color: var(--c4-berry);
+
+  font: 500 9px/1.6 var(--c4-mono);
+}
+
+.cj4-studio .cj4-panel-top a {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  color: var(--c4-ink);
+
+  font: 500 9px var(--c4-mono);
+  white-space: nowrap;
+}
+
+.cj4-panel h2 {
+  margin: 25px 0 15px;
+
+  font: 500
+    clamp(32px, 3.5vw, 53px)/1.03
+    var(--c4-serif);
+
+  letter-spacing: -.065em;
+}
+
+.cj4-panel-description {
+  color: var(--c4-muted);
+
+  font: 400 11px/1.7 var(--c4-body);
+}
+
+.cj4-revenue-chart {
+  width: 100%;
+  height: 255px;
+
+  min-width: 0;
+  margin-top: 22px;
+}
+
+.cj4-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+
+  min-height: 190px;
+  padding: 30px;
+
+  background: var(--c4-paper);
+  color: var(--c4-muted);
+
+  text-align: center;
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+.cj4-empty strong {
+  color: var(--c4-ink);
+}
+
+.cj4-empty-small {
+  min-height: 90px;
+  padding: 20px;
+
+  text-align: left;
+  align-items: flex-start;
+}
+
+/* DASHBOARD ACTIVITY ROWS */
+
+.cj4-dash-list {
+  display: grid;
+}
+
+.cj4-studio .cj4-dash-list-row {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+
+  padding: 17px 0;
+
+  border-top: 1px solid var(--c4-line);
+  color: var(--c4-ink);
+}
+
+.cj4-dash-list-row:first-child {
+  border-top: 0;
+}
+
+.cj4-dash-list-row > div {
+  flex: 1;
+
+  min-width: 0;
+
+  display: grid;
+  gap: 6px;
+}
+
+.cj4-dash-list-row strong {
+  font: 700 12px var(--c4-body);
+  overflow-wrap: anywhere;
+}
+
+.cj4-dash-list-row small {
+  color: var(--c4-berry);
+
+  font: 400 9px var(--c4-mono);
+  overflow-wrap: anywhere;
+}
+
+.cj4-dash-list-row span {
+  color: var(--c4-muted);
+
+  font: 400 11px/1.55 var(--c4-body);
+  overflow-wrap: anywhere;
+}
+
+.cj4-queue-state {
+  padding: 8px;
+
+  background: var(--c4-sand);
+  color: var(--c4-berry) !important;
+
+  font: 500 9px var(--c4-mono) !important;
+  white-space: nowrap;
+}
+
+/* OCCUPANCY CIRCLE */
+
+.cj4-occupancy-display {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  flex-wrap: wrap;
+
+  padding: 29px 0 7px;
+}
+
+.cj4-occupancy-ring {
+  display: grid;
+  place-items: center;
+
+  width: 155px;
+  height: 155px;
+
+  border-radius: 50%;
+
+  background: conic-gradient(
+    var(--c4-berry)
+      var(--cj4-occupancy),
+    var(--c4-sand) 0
+  );
+}
+
+.cj4-occupancy-ring > div {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  width: 127px;
+  height: 127px;
+
+  border-radius: 50%;
+  background: var(--c4-white);
+}
+
+.cj4-occupancy-ring strong {
+  font: 500 38px var(--c4-serif);
+}
+
+.cj4-occupancy-ring small {
+  font: 400 9px var(--c4-mono);
+}
+
+.cj4-occupancy-display p {
+  color: var(--c4-muted);
+
+  font: 400 12px/2.2 var(--c4-body);
+}
+
+.cj4-occupancy-display p b {
+  color: var(--c4-ink);
+}
+
+.cj4-dashboard-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+
+  padding: 23px;
+
+  border: 1px solid var(--c4-line);
+
+  font: 500 9px/1.5 var(--c4-mono);
+}
+
+.cj4-dashboard-bottom span,
+.cj4-dashboard-bottom a {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  color: var(--c4-ink);
+}
+
+/* ============================================
+   07 / EXISTING STAFF MODULE RESKIN
+   Original React logic remains unchanged.
+============================================ */
+
+.cj4-studio :is(
+  .yc7-pos,
+  .yc7-barista,
+  .yc7-inventory,
+  .yc6-tables,
+  .yc8-reports
+) {
+  color: var(--c4-ink);
+  font-family: var(--c4-body);
+  min-width: 0;
+}
+
+.cj4-studio :is(
+  .yc7-pos-head,
+  .yc7-barista-head,
+  .yc7-inventory-head,
+  .yc6-head,
+  .yc8-reports .top
+) {
+  padding: 24px 0 34px;
+
+  border-bottom: 1px solid var(--c4-ink);
+
+  margin-bottom: 14px;
+  align-items: flex-end;
+}
+
+.cj4-studio :is(
+  .yc7-pos-head h1,
+  .yc7-barista h1,
+  .yc7-inventory h1,
+  .yc6-tables h1,
+  .yc8-reports h1
+) {
+  margin: 16px 0;
+
+  font: 500
+    clamp(45px, 5vw, 80px)/.98
+    var(--c4-serif);
+
+  letter-spacing: -.075em;
+  color: var(--c4-ink);
+}
+
+.cj4-studio :is(
+  .yc7-pos-head small,
+  .yc7-barista-kicker,
+  .yc7-inventory-kicker,
+  .yc6-kicker,
+  .yc8-reports .kicker
+) {
+  color: var(--c4-berry);
+
+  font: 500 9px var(--c4-mono);
+  letter-spacing: .03em;
+}
+
+.cj4-studio :is(
+  .yc7-pos-head p,
+  .yc7-barista-head p,
+  .yc7-inventory-head p,
+  .yc6-muted,
+  .yc8-reports .hint
+) {
+  color: var(--c4-muted);
+
+  font: 400 12px/1.85 var(--c4-body);
+}
+
+/* SHARED STAFF PANELS */
+
+.cj4-studio :is(
+  .yc7-pos-card,
+  .yc7-barista-ticket,
+  .yc7-inventory-item,
+  .yc7-inventory-metric,
+  .yc7-inventory-movements,
+  .yc6-sidebar,
+  .yc8-reports .panel,
+  .yc8-report-metric,
+  .yc7-pos-product,
+  .yc7-barista-metric
+) {
+  border: 1px solid var(--c4-line);
+  border-radius: 0;
+
+  background: var(--c4-white);
+  box-shadow: none;
+}
+
+.cj4-studio :is(
+  .yc7-pos-card,
+  .yc7-inventory-item,
+  .yc7-barista-ticket,
+  .yc7-inventory-movements,
+  .yc6-sidebar,
+  .yc8-reports .panel
+) {
+  padding: clamp(19px, 2.2vw, 31px);
+}
+
+.cj4-studio :is(
+  .yc7-pos-card h2,
+  .yc7-barista-ticket h3,
+  .yc7-inventory-item h3,
+  .yc7-inventory-movements h2,
+  .yc6-sidebar h2,
+  .yc8-reports .panel h2
+) {
+  font: 500
+    clamp(26px, 2.8vw, 44px)/1.05
+    var(--c4-serif);
+
+  letter-spacing: -.055em;
+  color: var(--c4-ink);
+}
+
+/* STATUS BANNERS */
+
+.cj4-studio :is(
+  .yc7-pos-note,
+  .yc7-barista-live,
+  .yc7-inventory-help
+) {
+  padding: 12px 16px;
+
+  background: var(--c4-leaf);
+  color: var(--c4-ink);
+
+  font: 500 10px/1.7 var(--c4-mono);
+}
+
+/* TOOLBARS */
+
+.cj4-studio :is(
+  .yc7-pos-toolbar,
+  .yc7-inventory-controls,
+  .yc7-barista-filters
+) {
+  padding: 16px;
+
+  background: var(--c4-sand);
+  border: 1px solid var(--c4-line);
+}
+
+.cj4-studio :is(
+  .yc7-pos-toolbar input,
+  .yc7-inventory-controls input,
+  .yc7-inventory-controls select,
+  .yc7-barista-filters input,
+  .yc7-barista-filters select,
+  .yc7-pos-field input,
+  .yc7-pos-field select,
+  .yc6-tables input,
+  .yc6-tables select,
+  .yc8-reports .tools select
+) {
+  min-height: 43px;
+  padding: 11px;
+
+  background: var(--c4-white);
+  border: 1px solid var(--c4-line);
+  border-radius: 0;
+
+  color: var(--c4-ink);
+}
+
+.cj4-studio :is(
+  .yc7-pos-tags button,
+  .yc7-barista-metric,
+  .yc6-pill,
+  .yc8-reports .tools button
+) {
+  border-radius: 0;
+  border: 1px solid var(--c4-line);
+
+  background: var(--c4-white);
+  color: var(--c4-ink);
+}
+
+.cj4-studio :is(
+  .yc7-pos-tags button.active,
+  .yc7-barista-metric.active
+) {
+  background: var(--c4-ink);
+  border-color: var(--c4-ink);
+  color: white;
+}
+
+/* BUTTONS AND PRIMARY ACTIONS */
+
+.cj4-studio :is(
+  .yc7-pos-add,
+  .yc7-pos-checkout,
+  .yc7-barista-actions button.primary,
+  .yc7-inventory-restock button,
+  .yc6-action,
+  .yc8-reports .tools button:hover
+) {
+  background: var(--c4-ink);
+  color: white;
+  border-color: var(--c4-ink);
+  border-radius: 0;
+}
+
+.cj4-studio :is(
+  .yc7-pos-add,
+  .yc7-pos-checkout,
+  .yc7-barista-actions button,
+  .yc7-inventory-restock button,
+  .yc6-action
+):hover:not(:disabled) {
+  background: var(--c4-berry);
+  color: white;
+  border-color: var(--c4-berry);
+}
+
+/* ============================================
+   08 / POINT OF SALE
+============================================ */
+
+.cj4-studio :is(
+  .yc7-pos-products,
+  .yc7-inventory-grid,
+  .yc7-barista-columns
+) {
+  gap: 15px;
+}
+
+.cj4-studio .yc7-pos-product:hover {
+  transform: translateY(-4px);
+  border-color: var(--c4-berry);
+}
+
+.cj4-studio .yc7-pos-product > div {
+  background: var(--c4-white);
+}
+
+.cj4-studio .yc7-pos-product strong {
+  color: var(--c4-ink);
+
+  font-family: var(--c4-serif);
+  font-weight: 500;
+
+  letter-spacing: -.035em;
+  font-size: 23px;
+}
+
+.cj4-studio .yc7-pos-side {
+  top: 105px;
+}
+
+.cj4-studio .yc7-pos-total {
+  background: var(--c4-sand);
+  border-color: var(--c4-line);
+}
+
+/* ============================================
+   09 / BARISTA WORKFLOW
+============================================ */
+
+.cj4-studio .yc7-barista-ticket {
+  border-top: 3px solid var(--c4-berry);
+}
+
+.cj4-studio .yc7-barista-ticket.is-ready,
+.cj4-studio .yc7-barista-ticket.is-completed {
+  border-top-color: #66816a;
+}
+
+.cj4-studio .yc7-barista-ticket h3 {
+  margin: 3px 0;
+}
+
+.cj4-studio .yc7-barista-ref,
+.cj4-studio .yc7-inventory-badge.low {
+  color: var(--c4-berry);
+}
+
+.cj4-studio .yc7-barista-queue-lines {
+  border-color: var(--c4-line);
+}
+
+.cj4-studio .yc7-barista-note {
+  background: var(--c4-sand);
+  color: var(--c4-ink);
+}
+
+.cj4-studio .yc7-barista-actions button {
+  border-radius: 0;
+}
+
+.cj4-studio .yc7-barista-metric strong,
+.cj4-studio .yc7-inventory-metric strong {
+  font: 500 41px var(--c4-serif);
+}
+
+/* ============================================
+   10 / INVENTORY MANAGEMENT
+============================================ */
+
+.cj4-studio .yc7-inventory-item.low {
+  border-top: 3px solid var(--c4-berry);
+}
+
+.cj4-studio .yc7-inventory-item:not(.low) {
+  border-top: 3px solid #77917b;
+}
+
+.cj4-studio .yc7-inventory-icon {
+  background: var(--c4-sand);
+  color: var(--c4-berry);
+}
+
+.cj4-studio .yc7-inventory-item .amount {
+  font: 500 36px var(--c4-serif);
+}
+
+.cj4-studio .yc7-inventory-meter {
+  background: var(--c4-sand);
+  height: 6px;
+}
+
+.cj4-studio .yc7-inventory-meter span {
+  background: #778f72;
+}
+
+.cj4-studio
+.yc7-inventory-item.low
+.yc7-inventory-meter span {
+  background: var(--c4-berry);
+}
+
+.cj4-studio .yc7-inventory-restock input {
+  border: 1px solid var(--c4-line);
+  background: white;
+  color: var(--c4-ink);
+}
+
+/* ============================================
+   11 / FLOOR & TABLE OPERATIONS
+============================================ */
+
+.cj4-studio .yc6-grid {
+  gap: 19px;
+}
+
+.cj4-studio .yc6-overview {
+  gap: 10px;
+}
+
+.cj4-studio .yc6-pill {
+  padding: 12px 16px;
+  font: 500 10px var(--c4-mono);
+}
+
+.cj4-studio .yc6-sidebar {
+  top: 104px;
+}
+
+.cj4-studio .yc6-status {
+  border-radius: 0;
+}
+
+.cj4-studio .yc6-section {
+  border-color: var(--c4-line);
+}
+
+.cj4-studio .yc6-order {
+  background: var(--c4-sand);
+  border-color: var(--c4-line);
+}
+
+.cj4-studio .yc6-action.secondary {
+  background: transparent;
+  color: var(--c4-ink);
+  border-color: var(--c4-line);
+}
+
+.cj4-studio .yc6-action.danger {
+  background: var(--c4-berry);
+  color: white;
+}
+
+/* ORIGINAL INTERACTIVE STAFF FLOOR MAP */
+
+.cj4-studio .yc-floor {
+  min-width: 0;
+
+  border: 1px solid var(--c4-line);
+  background: var(--c4-sand);
+
+  color: var(--c4-ink);
+}
+
+.cj4-studio .yc-floor-toolbar {
+  padding: 24px;
+
+  background: var(--c4-ink);
+  color: white;
+}
+
+.cj4-studio .yc-floor-toolbar :is(
+  h2,
+  p,
+  strong
+) {
+  color: white;
+}
+
+.cj4-studio .yc-floor-toolbar h2 {
+  font: 500 38px var(--c4-serif);
+}
+
+.cj4-studio .yc-floor-canvas {
+  background: var(--c4-sand);
+}
+
+.cj4-studio .yc-floor-zone {
+  background: var(--c4-white);
+
+  border: 1px solid var(--c4-line);
+  border-radius: 0;
+}
+
+.cj4-studio .yc-zone-header h3 {
+  font: 500 25px var(--c4-serif);
+  color: var(--c4-ink);
+}
+
+.cj4-studio .yc-table-seat {
+  border-radius: 0;
+}
+
+.cj4-studio .yc-table-seat.is-selected {
+  outline: 3px solid var(--c4-berry);
+  outline-offset: 2px;
+}
+
+.cj4-studio .yc-floor-counter {
+  background: var(--c4-berry);
+  color: white;
+
+  border-radius: 0;
+}
+
+/* ============================================
+   12 / REPORTS AND ANALYTICS
+============================================ */
+
+.cj4-studio .yc8-reports .metrics {
+  gap: 13px;
+}
+
+.cj4-studio .yc8-report-metric {
+  padding: 24px;
+  border-top: 3px solid var(--c4-berry);
+}
+
+.cj4-studio .yc8-report-metric strong {
+  color: var(--c4-ink);
+
+  font: 500 38px/1 var(--c4-serif);
+}
+
+.cj4-studio .yc8-report-metric svg {
+  color: var(--c4-berry);
+}
+
+.cj4-studio .yc8-reports .panel {
+  background: var(--c4-white);
+}
+
+.cj4-studio .yc8-reports .panel h2 {
+  font-size: 37px;
+}
+
+.cj4-studio .yc8-reports .product {
+  border-color: var(--c4-line);
+}
+
+.cj4-studio .yc8-reports .empty {
+  background: var(--c4-sand);
+  color: var(--c4-muted);
+}
+
+.cj4-studio .yc8-reports .chart {
+  min-width: 0;
+}
+
+.cj4-studio :is(
+  .yc7-pos,
+  .yc7-barista,
+  .yc7-inventory,
+  .yc6-tables,
+  .yc8-reports
+) :where(
+  p,
+  span,
+  small
+) {
+  overflow-wrap: anywhere;
+}
+
+/* ============================================
+   13 / RESPONSIVE — LAPTOP
+============================================ */
+
+@media (max-width: 1350px) {
+  .staff-app.cj4-studio {
+    grid-template-columns:
+      225px
+      minmax(0, 1fr);
+  }
+
+  .cj4-topbar-right .cj4-clock {
+    display: none;
+  }
+
+  .cj4-metric-grid {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+
+  .cj4-dash-main-grid {
+    grid-template-columns:
+      minmax(0, 1fr)
+      300px;
+  }
+}
+
+/* ============================================
+   14 / RESPONSIVE — TABLET
+============================================ */
+
+@media (max-width: 1100px) {
+  .staff-app.cj4-studio {
+    display: block;
+  }
+
+  .cj4-studio .cj4-sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+
+    width: min(315px, 90vw);
+    height: 100dvh;
+
+    transform: translateX(-110%);
+
+    transition:
+      transform .35s
+      cubic-bezier(.22, 1, .36, 1);
+
+    box-shadow: 22px 0 65px #20171550;
+    visibility: hidden;
+  }
+
+  .cj4-studio .cj4-sidebar.is-open {
+    transform: translateX(0);
+    visibility: visible;
+  }
+
+  .cj4-close,
+  .cj4-hamburger {
+    display: grid;
+  }
+
+  .cj4-backdrop {
+    display: block;
+
+    position: fixed;
+    inset: 0;
+    z-index: 80;
+
+    border: 0;
+    background: #211918a8;
+  }
+
+  .cj4-topbar-right .cj4-clock {
+    display: flex;
+  }
+
+  .cj4-dash-main-grid {
+    grid-template-columns:
+      minmax(0, 1fr)
+      minmax(250px, .8fr);
+  }
+
+  .cj4-studio .yc6-sidebar {
+    position: static;
+  }
+}
+
+@media (max-width: 880px) {
+  .cj4-topbar-right .cj4-daily-tally {
+    display: none;
+  }
+
+  .cj4-dash-main-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .cj4-dashboard-hero {
+    grid-template-columns: 1fr;
+  }
+
+  .cj4-dashboard-hero-art {
+    min-height: 240px;
+
+    flex-direction: row;
+    gap: 22px;
+  }
+
+  .cj4-dashboard-hero-art > strong {
+    font-size: 48px;
+  }
+
+  .cj4-occupancy-display {
+    justify-content: flex-start;
+  }
+}
+
+/* ============================================
+   15 / RESPONSIVE — MOBILE
+============================================ */
+
+@media (max-width: 600px) {
+  .cj4-studio .staff-main.cj4-main {
+    padding: 18px 15px 45px;
+  }
+
+  .cj4-topbar {
+    min-height: 69px;
+    padding: 12px 15px;
+  }
+
+  .cj4-topbar-right .cj4-clock {
+    display: none;
+  }
+
+  .cj4-topbar-left > div > span {
+    font-size: 7px;
+  }
+
+  .cj4-topbar-left > div > strong {
+    font-size: 13px;
+  }
+
+  .cj4-new-ticket {
+    padding: 11px !important;
+    font-size: 8px !important;
+  }
+
+  .cj4-new-ticket svg:last-child {
+    display: none;
+  }
+
+  .cj4-workspace-footer {
+    padding: 20px 15px;
+    font-size: 8px;
+  }
+
+  .cj4-dashboard-hero > div:first-child {
+    padding: 34px 24px;
+  }
+
+  .cj4-dashboard-hero h1 {
+    font-size: 61px;
+  }
+
+  .cj4-dashboard-hero-art {
+    min-height: 190px;
+  }
+
+  .cj4-dashboard-hero-art > svg {
+    width: 55px;
+  }
+
+  .cj4-dashboard-hero-art > strong {
+    font-size: 40px;
+  }
+
+  .cj4-dashboard-hero-art > span,
+  .cj4-dashboard-hero-art > small {
+    display: none;
+  }
+
+  .cj4-metric-grid {
+    gap: 9px;
+  }
+
+  .cj4-metric {
+    padding: 16px;
+    min-height: 145px;
+  }
+
+  .cj4-metric > strong {
+    font-size: 30px;
+  }
+
+  .cj4-metric-top {
+    font-size: 8px;
+  }
+
+  .cj4-panel {
+    padding: 20px;
+  }
+
+  .cj4-panel-top {
+    flex-wrap: wrap;
+  }
+
+  .cj4-revenue-chart {
+    height: 210px;
+  }
+
+  .cj4-dash-list-row {
+    gap: 9px !important;
+  }
+
+  .cj4-queue-state {
+    font-size: 7px !important;
+  }
+
+  .cj4-studio :is(
+    .yc7-pos-head,
+    .yc7-barista-head,
+    .yc7-inventory-head,
+    .yc6-head,
+    .yc8-reports .top
+  ) {
+    padding: 16px 0 25px;
+  }
+
+  .cj4-studio :is(
+    .yc7-pos-head h1,
+    .yc7-barista h1,
+    .yc7-inventory h1,
+    .yc6-tables h1,
+    .yc8-reports h1
+  ) {
+    font-size: 48px;
+  }
+
+  .cj4-studio :is(
+    .yc7-pos-products,
+    .yc7-inventory-grid
+  ) {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+
+  .cj4-studio .yc7-pos-product strong {
+    font-size: 18px;
+  }
+
+  .cj4-studio .yc7-pos-card {
+    padding: 17px;
+  }
+}
+
+@media (max-width: 390px) {
+  .cj4-metric-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .cj4-studio :is(
+    .yc7-pos-products,
+    .yc7-inventory-grid
+  ) {
+    grid-template-columns: 1fr;
+  }
+
+  .cj4-dashboard-hero h1 {
+    font-size: 53px;
+  }
+
+  .cj4-topbar-left > div > span i {
+    display: none;
+  }
+}
+
+/* ============================================
+   16 / REDUCED MOTION
+============================================ */
+
+@media (prefers-reduced-motion: reduce) {
+  .cj4-studio *,
+  .cj4-studio *::before,
+  .cj4-studio *::after {
+    transition: none !important;
+    animation: none !important;
+    scroll-behavior: auto !important;
+  }
+}

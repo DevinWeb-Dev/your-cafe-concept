@@ -1,136 +1,860 @@
-// YOUR CAFÉ — Batch 6 / customer reservations
-// Frontend-only demonstration: no real booking is sent.
 import { useMemo, useState } from "react";
-import { Link } from "react-router-dom";
-import { ArrowRight, CalendarDays, CheckCircle2, Clock3, Coffee, MapPin, Users } from "lucide-react";
-import { BRAND, POLICIES, SEATING_ZONES } from "../../data/config.js";
-import { isTableFreeForPeriod } from "../../engine/cafeEngine.js";
-import { useCafe } from "../../context/CafeContext.jsx";
+import {
+  Link,
+  useSearchParams,
+} from "react-router-dom";
 
-function localDateTime(daysAhead = 1, hour = 14) {
-  const date = new Date();
-  date.setDate(date.getDate() + daysAhead);
-  date.setHours(hour, 0, 0, 0);
-  const pad = (value) => String(value).padStart(2, "0");
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+import {
+  ArrowLeft,
+  ArrowRight,
+  ArrowUpRight,
+  CalendarDays,
+  Check,
+  Clock3,
+  Coffee,
+  MapPin,
+  Ticket,
+  Users,
+  X,
+} from "lucide-react";
+
+import {
+  PHOTOS,
+  POLICIES,
+  SEATING_ZONES,
+} from "../../data/config.js";
+
+import {
+  isTableFreeForPeriod,
+} from "../../engine/cafeEngine.js";
+
+import {
+  useCafe,
+} from "../../context/CafeContext.jsx";
+
+import CoffeeSeatingPlan from "../../components/CoffeeSeatingPlan.jsx";
+import "../../styles/coffee-experience.css";
+
+const OWN_KEY = "your-cafe-journal-reservation-ids-v1";
+
+const pad = (number) =>
+  String(number).padStart(2, "0");
+
+function localInputValue(date) {
+  return [
+    date.getFullYear(),
+    "-",
+    pad(date.getMonth() + 1),
+    "-",
+    pad(date.getDate()),
+    "T",
+    pad(date.getHours()),
+    ":",
+    pad(date.getMinutes()),
+  ].join("");
 }
 
-const niceDate = (value) => new Date(value).toLocaleString("en-PH", {
-  dateStyle: "medium", timeStyle: "short",
-});
+function defaultDate() {
+  const date = new Date();
+
+  date.setDate(date.getDate() + 1);
+  date.setHours(14, 0, 0, 0);
+
+  return localInputValue(date);
+}
+
+function formattedDate(timestamp) {
+  return new Intl.DateTimeFormat("en-PH", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(new Date(timestamp));
+}
+
+function readOwnIds() {
+  try {
+    const saved = JSON.parse(
+      sessionStorage.getItem(OWN_KEY) || "[]"
+    );
+
+    return Array.isArray(saved) ? saved : [];
+  } catch {
+    return [];
+  }
+}
 
 export default function ReservationsPage() {
-  const { state, tables, reservations, actions, now } = useCafe();
-  const [dateTime, setDateTime] = useState(() => localDateTime());
-  const [partySize, setPartySize] = useState(2);
-  const [zoneId, setZoneId] = useState("all");
-  const [selectedId, setSelectedId] = useState("");
-  const [nickname, setNickname] = useState("");
-  const [duration, setDuration] = useState(POLICIES.reservationDurationMinutes);
-  const [response, setResponse] = useState(null);
+  const [params] = useSearchParams();
+
+  const {
+    state,
+    tables,
+    reservations,
+    actions,
+    now,
+  } = useCafe();
+
+  const [dateTime, setDateTime] = useState(
+    () => {
+      const value = params.get("datetime");
+
+      return value &&
+        Number.isFinite(new Date(value).getTime())
+        ? value
+        : defaultDate();
+    }
+  );
+
+  const [partySize, setPartySize] = useState(
+    () => {
+      const value = Number(params.get("party"));
+
+      return Number.isInteger(value) &&
+        value >= 1 &&
+        value <= POLICIES.maximumPartySize
+        ? value
+        : 2;
+    }
+  );
+
+  const [zoneId, setZoneId] = useState(
+    () => {
+      const value = params.get("zone") || "all";
+
+      return value === "all" ||
+        SEATING_ZONES.some(
+          (zone) => zone.id === value
+        )
+        ? value
+        : "all";
+    }
+  );
+
+  const [duration, setDuration] = useState(
+    () => {
+      const value = Number(
+        params.get("duration")
+      );
+
+      return [60, 90, 120, 180].includes(value)
+        ? value
+        : POLICIES.reservationDurationMinutes;
+    }
+  );
+
+  const [selectedId, setSelectedId] =
+    useState(
+      () => params.get("table") || ""
+    );
+
+  const [nickname, setNickname] =
+    useState("");
+
+  const [result, setResult] =
+    useState(null);
+
+  const [ownIds, setOwnIds] =
+    useState(readOwnIds);
+
   const startAt = new Date(dateTime).getTime();
-  const endAt = startAt + duration * 60_000;
-  const dateEligible = Number.isFinite(startAt) &&
-    startAt >= now + POLICIES.minimumReservationNoticeMinutes * 60_000 &&
-    startAt <= now + POLICIES.maximumAdvanceBookingDays * 86_400_000;
+  const endAt = startAt + duration * 60000;
 
-  const eligibleTables = useMemo(() => tables.filter((table) =>
-    table.capacity >= partySize && (zoneId === "all" || table.zoneId === zoneId)
-  ).map((table) => ({
-    ...table,
-    bookable: dateEligible && isTableFreeForPeriod(state, table.id, startAt, endAt, now),
-  })), [tables, partySize, zoneId, dateEligible, state, startAt, endAt, now]);
+  const validDate =
+    Number.isFinite(startAt) &&
+    startAt >=
+      now +
+        POLICIES.minimumReservationNoticeMinutes *
+          60000 &&
+    startAt <=
+      now +
+        POLICIES.maximumAdvanceBookingDays *
+          86400000;
 
-  const availableCount = eligibleTables.filter((table) => table.bookable).length;
-  const choice = eligibleTables.find((table) => table.id === selectedId && table.bookable);
-  const confirmed = response?.ok && reservations.find((r) => r.id === response.reservationId);
+  const maxInputDate = localInputValue(
+    new Date(
+      now +
+        POLICIES.maximumAdvanceBookingDays *
+          86400000
+    )
+  );
+
+  const todayInputDate = localInputValue(
+    new Date(now)
+  );
+
+  const rows = useMemo(
+    () =>
+      tables
+        .filter(
+          (table) =>
+            zoneId === "all" ||
+            table.zoneId === zoneId
+        )
+        .map((table) => {
+          const fits =
+            table.capacity >= partySize;
+
+          const free =
+            validDate &&
+            fits &&
+            isTableFreeForPeriod(
+              state,
+              table.id,
+              startAt,
+              endAt,
+              now
+            );
+
+          return {
+            ...table,
+            bookable: Boolean(free),
+
+            reason: !fits
+              ? "Insufficient seating capacity"
+              : !validDate
+                ? "Choose a valid date"
+                : free
+                  ? "Available in this demo"
+                  : "Unavailable for this slot",
+          };
+        }),
+    [
+      tables,
+      zoneId,
+      partySize,
+      validDate,
+      state,
+      startAt,
+      endAt,
+      now,
+    ]
+  );
+
+  const availableCount = rows.filter(
+    (table) => table.bookable
+  ).length;
+
+  const choice = rows.find(
+    (table) =>
+      table.id === selectedId &&
+      table.bookable
+  );
+
+  const ownedReservations = reservations.filter(
+    (reservation) =>
+      ownIds.includes(reservation.id)
+  );
+
+  function changeField(setter, value) {
+    setter(value);
+    setSelectedId("");
+    setResult(null);
+  }
 
   function submit(event) {
     event.preventDefault();
-    setResponse(null);
-    if (!dateEligible) return setResponse({ ok: false, text: "Choose an eligible date and time at least 30 minutes from now." });
-    if (!choice) return setResponse({ ok: false, text: "Choose an available table that can seat your party." });
-    const result = actions.reserveTable({ tableId: choice.id, partySize, nickname, startAt, durationMinutes: duration });
-    if (!result.ok) return setResponse({ ok: false, text: result.error });
-    const newest = result.state.reservations[0];
-    setResponse({ ok: true, reservationId: newest.id, text: "Demo reservation created successfully." });
+
+    setResult(null);
+
+    if (!validDate) {
+      setResult({
+        ok: false,
+        message:
+          `Choose a date between ${
+            POLICIES.minimumReservationNoticeMinutes
+          } minutes from now and ${
+            POLICIES.maximumAdvanceBookingDays
+          } days ahead.`,
+      });
+
+      return;
+    }
+
+    if (!choice) {
+      setResult({
+        ok: false,
+        message:
+          "Select a table that is available for your chosen party and time.",
+      });
+
+      return;
+    }
+
+    if (!nickname.trim()) {
+      setResult({
+        ok: false,
+        message:
+          "Please enter a demonstration nickname.",
+      });
+
+      return;
+    }
+
+    const response = actions.reserveTable({
+      tableId: choice.id,
+      nickname: nickname.trim(),
+      partySize,
+      startAt,
+      durationMinutes: duration,
+    });
+
+    if (!response.ok) {
+      setResult({
+        ok: false,
+        message: response.error,
+      });
+
+      return;
+    }
+
+    const created =
+      response.state.reservations[0];
+
+    if (created) {
+      setOwnIds((previous) => {
+        const updated = [
+          created.id,
+          ...previous.filter(
+            (id) => id !== created.id
+          ),
+        ];
+
+        try {
+          sessionStorage.setItem(
+            OWN_KEY,
+            JSON.stringify(updated)
+          );
+        } catch {
+          // Continue without session persistence.
+        }
+
+        return updated;
+      });
+    }
+
+    setResult({
+      ok: true,
+      booking: created,
+      message:
+        "Your demonstration reservation has been created.",
+    });
+
     setSelectedId("");
   }
 
+  function cancelBooking(reservation) {
+    const response =
+      actions.cancelReservation(
+        reservation.id
+      );
+
+    if (response.ok) {
+      setResult({
+        ok: true,
+        message:
+          "The local demo reservation was cancelled.",
+      });
+    } else {
+      setResult({
+        ok: false,
+        message: response.error,
+      });
+    }
+  }
+
   return (
-    <section className="yc6-reserve section cream page-section">
-      <style>{`
-        .yc6-reserve{color:#302824}.yc6-reserve .yc6-hero{padding:25px 0 38px;display:grid;grid-template-columns:minmax(0,1.2fr) minmax(250px,.8fr);gap:30px;align-items:end}
-        .yc6-reserve .yc6-kicker{font:700 10px 'DM Sans',sans-serif;letter-spacing:.2em;color:#94704c;text-transform:uppercase}
-        .yc6-reserve h1{font:500 clamp(58px,7.2vw,108px)/.92 'Cormorant Garamond',Georgia,serif;margin:14px 0 18px;letter-spacing:-.04em}
-        .yc6-reserve h1 em{color:#ab7f50;font-weight:400}.yc6-reserve .yc6-intro{max-width:410px;color:#807364;line-height:1.8;font-size:13px}
-        .yc6-reserve .yc6-board{display:grid;grid-template-columns:minmax(0,1fr) minmax(300px,.8fr);gap:24px;align-items:start}
-        .yc6-reserve .yc6-panel{padding:clamp(20px,3vw,36px);background:#fffaf4;border:1px solid #e6d8c5;min-width:0}
-        .yc6-reserve .yc6-panel h2{font:500 37px 'Cormorant Garamond',Georgia,serif;margin:0 0 9px}.yc6-reserve .yc6-sub{font-size:12px;color:#877867;line-height:1.6;margin:0 0 24px}
-        .yc6-reserve .yc6-form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
-        .yc6-reserve label{display:grid;gap:8px;color:#775e45;font-size:10px;font-weight:700;letter-spacing:.09em;min-width:0}
-        .yc6-reserve input,.yc6-reserve select{width:100%;max-width:100%;min-width:0;background:#faf5ec;border:1px solid #dbcbb8;padding:13px 12px;border-radius:5px;color:#302824;font-size:13px}
-        .yc6-reserve .yc6-full{grid-column:1/-1}.yc6-reserve .yc6-table-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
-        .yc6-reserve .yc6-table{min-width:0;min-height:95px;border:1px solid #dbd0bf;background:#faf5ec;color:#5b4737;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;padding:10px 4px;border-radius:7px}
-        .yc6-reserve .yc6-table b{font-size:12px}.yc6-reserve .yc6-table small{font-size:9px;color:#827665}.yc6-reserve .yc6-table:disabled{opacity:.38;cursor:not-allowed}
-        .yc6-reserve .yc6-table.active{background:#536449;color:#fff;border-color:#536449;box-shadow:0 9px 18px #53644933}.yc6-reserve .yc6-table.active small{color:#e8e5d9}
-        .yc6-reserve .yc6-table-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:28px 0 14px}.yc6-reserve .yc6-table-heading h3{font:500 24px 'Cormorant Garamond',Georgia,serif;margin:0}
-        .yc6-reserve .yc6-count{color:#65826b;font-size:11px;font-weight:700}.yc6-reserve .yc6-submit{width:100%;min-height:50px;background:#3a2922;color:#fff;border:0;margin-top:21px;display:flex;align-items:center;justify-content:center;gap:10px;font-weight:700}
-        .yc6-reserve .yc6-submit:disabled{opacity:.4}.yc6-reserve .yc6-response{padding:16px;margin-top:18px;background:#f7e6df;border-left:3px solid #b96254;font-size:12px;line-height:1.7}
-        .yc6-reserve .yc6-response.good{background:#eaf0e4;border-color:#66816a}.yc6-reserve .yc6-note{display:flex;gap:10px;align-items:flex-start;font-size:11px;color:#857666;line-height:1.7;margin-top:16px}
-        .yc6-reserve .yc6-side-photo{height:220px;background:#2c1c12 url('https://images.unsplash.com/photo-1554118811-1e0d58224f24?auto=format&fit=crop&w=1000&q=80') center/cover;margin:-36px -36px 24px}
-        .yc6-reserve .yc6-schedule{display:grid;gap:14px}.yc6-reserve .yc6-booking{padding:15px;border:1px solid #e2d7c9;background:#faf5ec;font-size:12px;display:grid;gap:7px}
-        .yc6-reserve .yc6-booking>div{display:flex;align-items:center;justify-content:space-between;gap:8px}.yc6-reserve .yc6-booking small{color:#877663;overflow-wrap:anywhere}
-        @media(max-width:920px){.yc6-reserve .yc6-board{grid-template-columns:1fr}.yc6-reserve .yc6-side-photo{margin:-25px -25px 24px}}
-        @media(max-width:620px){.yc6-reserve .yc6-hero{grid-template-columns:1fr}.yc6-reserve .yc6-form-grid{grid-template-columns:1fr}.yc6-reserve .yc6-table-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.yc6-reserve .yc6-panel{padding:19px}.yc6-reserve .yc6-side-photo{margin:-19px -19px 24px}}
-      `}</style>
-      <div className="shell">
-        <div className="yc6-hero">
-          <div><span className="yc6-kicker">A PLACE FOR EVERY MOMENT</span><h1>Save your <em>favorite seat.</em></h1></div>
-          <p className="yc6-intro">A window by the light. A table for conversations. A quiet corner for coffee. Choose your preferred café space with our interactive booking demonstration.</p>
+    <div className="cj3-page">
+      <section className="cj3-hero cj3-hero--reserve">
+        <div className="cj3-hero-copy">
+          <span className="cj3-kicker cj3-kicker--light">
+            YOUR CAFÉ / SEATING JOURNAL
+          </span>
+
+          <h1>
+            Stay a
+            <br />
+            <em>little longer.</em>
+          </h1>
+
+          <p>
+            A sunlit corner. A table for
+            friends. A spot near the espresso
+            bar. Find the place that feels
+            like yours.
+          </p>
+
+          <a
+            href="#cj3-reservation-editor"
+            className="cj3-hero-link"
+          >
+            CHOOSE YOUR SEAT
+            <ArrowRight size={18} />
+          </a>
+
+          <span className="cj3-hero-foot">
+            CHAPTER 03 / THE SEATING EDIT
+          </span>
         </div>
-        <div className="yc6-board">
-          <form className="yc6-panel" onSubmit={submit}>
-            <h2>Plan your visit.</h2><p className="yc6-sub">Choose your date, number of guests and favorite seating area.</p>
-            <div className="yc6-form-grid">
-              <label>DATE & TIME<input required type="datetime-local" value={dateTime} min={localDateTime(0, 0)} onChange={(e) => { setDateTime(e.target.value); setSelectedId(""); setResponse(null); }} /></label>
-              <label>NUMBER OF GUESTS<select value={partySize} onChange={(e) => { setPartySize(Number(e.target.value)); setSelectedId(""); }}>
-                {Array.from({ length: POLICIES.maximumPartySize }, (_, index) => <option key={index + 1} value={index + 1}>{index + 1} {index ? "guests" : "guest"}</option>)}
-              </select></label>
-              <label>SEATING PREFERENCE<select value={zoneId} onChange={(e) => { setZoneId(e.target.value); setSelectedId(""); }}>
-                <option value="all">Any beautiful space</option>{SEATING_ZONES.map((z) => <option value={z.id} key={z.id}>{z.name}</option>)}
-              </select></label>
-              <label>RESERVATION LENGTH<select value={duration} onChange={(e) => { setDuration(Number(e.target.value)); setSelectedId(""); }}>
-                {[60, 90, 120, 180].map((m) => <option key={m} value={m}>{m} minutes</option>)}
-              </select></label>
-              <label className="yc6-full">GUEST NICKNAME (OPTIONAL)<input maxLength={40} placeholder="e.g. Coffee Lover" value={nickname} onChange={(e) => setNickname(e.target.value)} /></label>
-            </div>
-            <div className="yc6-table-heading"><h3>Select a table</h3><span className="yc6-count">{dateEligible ? `${availableCount} available` : "Choose valid time"}</span></div>
-            {eligibleTables.length ? <div className="yc6-table-grid">
-              {eligibleTables.map((t) => <button className={`yc6-table ${selectedId === t.id ? "active" : ""}`} type="button" key={t.id} disabled={!t.bookable} aria-pressed={selectedId === t.id} onClick={() => setSelectedId(t.id)}>
-                <Coffee size={17}/><b>{t.id}</b><small>{t.capacity} {t.capacity === 1 ? "seat" : "seats"}</small>
-              </button>)}
-            </div> : <p className="yc6-sub">No tables match the selected capacity and seating preference.</p>}
-            <button className="yc6-submit" type="submit" disabled={!choice}><CalendarDays size={18}/> Confirm Demo Reservation <ArrowRight size={17}/></button>
-            {response && <div role="status" className={`yc6-response ${response.ok ? "good" : ""}`}>
-              {response.ok && <CheckCircle2 size={18} style={{ verticalAlign: "middle", marginRight: 6 }}/>} {response.text}
-              {confirmed && <><br/><strong>{confirmed.reference}</strong><br/>Table {confirmed.tableId} · {niceDate(confirmed.startAt)}</>}
-            </div>}
-            <p className="yc6-note"><Clock3 size={17}/>This is a local demonstration. No actual table is held by a café.</p>
-          </form>
-          <aside className="yc6-panel">
-            <div className="yc6-side-photo" role="img" aria-label="Illustrative warm café interior" />
-            <span className="yc6-kicker">YOUR CAFÉ · GUEST EXPERIENCE</span><h2>Beautifully unhurried.</h2>
-            <p className="yc6-sub">A thoughtful space for everyday rituals. Explore our illustrative café seating areas.</p>
-            <div className="yc6-schedule"><div className="yc6-note"><MapPin size={18}/> {BRAND.address}</div><div className="yc6-note"><Users size={18}/> {SEATING_ZONES.length} unique seating areas</div>
-              {reservations.filter((r) => r.status === "reserved").slice(0, 4).map((r) => <article className="yc6-booking" key={r.id}>
-                <div><strong>{r.tableId} · {r.partySize} guests</strong><span>DEMO</span></div><small>{niceDate(r.startAt)}</small>
-              </article>)}
-              <Link to="/menu" className="btn btn-outline">Explore Our Coffee Menu <ArrowRight size={16}/></Link>
-            </div>
-          </aside>
+
+        <div className="cj3-hero-photo">
+          <img
+            src={PHOTOS.interior}
+            alt="Illustrative café interior seating"
+            fetchPriority="high"
+          />
+
+          <span>
+            A TABLE FOR THE MOMENTS
+            THAT MATTER
+          </span>
         </div>
-      </div>
-    </section>
+      </section>
+
+      <section
+        className="cj3-reservation-workspace"
+        id="cj3-reservation-editor"
+      >
+        <div className="cj3-wide">
+          <div className="cj3-section-heading">
+            <div>
+              <span className="cj3-kicker">
+                01 / YOUR VISIT
+              </span>
+
+              <h2>
+                Plan a <em>little pause.</em>
+              </h2>
+            </div>
+
+            <p>
+              Explore the café's 28 illustrative
+              seating units. Table conditions
+              and conflicts are calculated
+              from local demo records.
+            </p>
+          </div>
+
+          <div className="cj3-workspace-grid">
+            <div className="cj3-reservation-main">
+              <form
+                id="cj3-reservation-form"
+                onSubmit={submit}
+                className="cj3-reservation-form"
+              >
+                <div className="cj3-form-heading">
+                  <span>THE RESERVATION CARD</span>
+
+                  <CalendarDays size={22} />
+                </div>
+
+                <div className="cj3-form-grid">
+                  <label className="cj3-field">
+                    <span>
+                      PREFERRED DATE & TIME
+                    </span>
+
+                    <input
+                      type="datetime-local"
+                      required
+                      min={todayInputDate}
+                      max={maxInputDate}
+                      value={dateTime}
+                      onChange={(event) =>
+                        changeField(
+                          setDateTime,
+                          event.target.value
+                        )
+                      }
+                    />
+                  </label>
+
+                  <label className="cj3-field">
+                    <span>NUMBER OF GUESTS</span>
+
+                    <select
+                      value={partySize}
+                      onChange={(event) =>
+                        changeField(
+                          setPartySize,
+                          Number(
+                            event.target.value
+                          )
+                        )
+                      }
+                    >
+                      {Array.from(
+                        {
+                          length:
+                            POLICIES.maximumPartySize,
+                        },
+                        (_, i) => i + 1
+                      ).map((value) => (
+                        <option
+                          key={value}
+                          value={value}
+                        >
+                          {value}{" "}
+                          {value === 1
+                            ? "guest"
+                            : "guests"}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+
+                  <label className="cj3-field">
+                    <span>YOUR FAVORITE AREA</span>
+
+                    <select
+                      value={zoneId}
+                      onChange={(event) =>
+                        changeField(
+                          setZoneId,
+                          event.target.value
+                        )
+                      }
+                    >
+                      <option value="all">
+                        Any lovely corner
+                      </option>
+
+                      {SEATING_ZONES.map(
+                        (zone) => (
+                          <option
+                            key={zone.id}
+                            value={zone.id}
+                          >
+                            {zone.name}
+                          </option>
+                        )
+                      )}
+                    </select>
+                  </label>
+
+                  <label className="cj3-field">
+                    <span>HOW LONG?</span>
+
+                    <select
+                      value={duration}
+                      onChange={(event) =>
+                        changeField(
+                          setDuration,
+                          Number(
+                            event.target.value
+                          )
+                        )
+                      }
+                    >
+                      {[60, 90, 120, 180].map(
+                        (value) => (
+                          <option
+                            key={value}
+                            value={value}
+                          >
+                            {value} minutes
+                          </option>
+                        )
+                      )}
+                    </select>
+                  </label>
+
+                  <label className="cj3-field cj3-field--full">
+                    <span>
+                      YOUR DEMO NICKNAME
+                    </span>
+
+                    <input
+                      value={nickname}
+                      maxLength={40}
+                      required
+                      placeholder="e.g. Coffee Explorer"
+                      autoComplete="off"
+                      onChange={(event) => {
+                        setNickname(
+                          event.target.value
+                        );
+
+                        setResult(null);
+                      }}
+                    />
+                  </label>
+                </div>
+
+                <div className="cj3-form-summary">
+                  <span>
+                    <Users size={17} />
+                    {partySize}{" "}
+                    {partySize === 1
+                      ? "GUEST"
+                      : "GUESTS"}
+                  </span>
+
+                  <span>
+                    <Clock3 size={17} />
+                    {duration} MINUTES
+                  </span>
+
+                  <strong>
+                    {availableCount} SUITABLE
+                    TABLES
+                  </strong>
+                </div>
+
+                {!validDate && (
+                  <p className="cj3-warning">
+                    Select an eligible future
+                    date and time. The local
+                    booking rules require at
+                    least 30 minutes' notice.
+                  </p>
+                )}
+
+                {partySize >
+                  Math.max(
+                    0,
+                    ...tables.map(
+                      (table) =>
+                        table.capacity
+                    )
+                  ) && (
+                  <p className="cj3-warning">
+                    No single demo table
+                    can seat this group.
+                    Choose a smaller party.
+                  </p>
+                )}
+
+                <CoffeeSeatingPlan
+                  rows={rows}
+                  selectedId={selectedId}
+                  onSelect={(id) => {
+                    setSelectedId(id);
+                    setResult(null);
+                  }}
+                  heading="Pick your place."
+                  description="Only tables suitable for the chosen date, party size and duration can be selected."
+                />
+
+                <div className="cj3-selection-summary">
+                  <div>
+                    <span>YOUR SELECTED SEAT</span>
+
+                    <strong>
+                      {choice
+                        ? choice.id
+                        : "Not selected yet"}
+                    </strong>
+
+                    <small>
+                      {choice
+                        ? SEATING_ZONES.find(
+                            (zone) =>
+                              zone.id ===
+                              choice.zoneId
+                          )?.name
+                        : "Choose a highlighted table on the map."}
+                    </small>
+                  </div>
+
+                  <Ticket size={31} />
+                </div>
+
+                <button
+                  type="submit"
+                  className="cj3-primary-button"
+                  disabled={
+                    !choice || !validDate
+                  }
+                >
+                  PREPARE DEMO RESERVATION
+                  <ArrowUpRight size={19} />
+                </button>
+
+                <p className="cj3-small-print">
+                  Frontend simulation only.
+                  This does not reserve
+                  a real café table.
+                </p>
+
+                {result && (
+                  <div
+                    className={`cj3-result ${
+                      result.ok
+                        ? "cj3-result--good"
+                        : "cj3-result--error"
+                    }`}
+                    role={
+                      result.ok
+                        ? "status"
+                        : "alert"
+                    }
+                  >
+                    {result.ok ? (
+                      <Check size={19} />
+                    ) : (
+                      <X size={19} />
+                    )}
+
+                    <div>
+                      <strong>
+                        {result.message}
+                      </strong>
+
+                      {result.booking && (
+                        <>
+                          <p>
+                            Reference:{" "}
+                            {
+                              result.booking.reference
+                            }
+                          </p>
+
+                          <p>
+                            {result.booking.tableId}
+                            {" "}·{" "}
+                            {formattedDate(
+                              result.booking.startAt
+                            )}
+                          </p>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </form>
+            </div>
+
+            <aside className="cj3-reservation-side">
+              <div className="cj3-side-photo">
+                <img
+                  src={PHOTOS.cafeInterior}
+                  alt="Illustrative café atmosphere"
+                  loading="lazy"
+                />
+
+                <span>
+                  YOUR FAVORITE CORNER AWAITS.
+                </span>
+              </div>
+
+              <div className="cj3-side-content">
+                <span className="cj3-kicker">
+                  THE VISIT JOURNAL
+                </span>
+
+                <h3>
+                  Your time,
+                  <br />
+                  <em>your table.</em>
+                </h3>
+
+                <p>
+                  Plan a comfortable café visit
+                  with our interactive demo
+                  seating system.
+                </p>
+
+                <div className="cj3-side-rule">
+                  <MapPin size={17} />
+                  FIVE DISTINCT SEATING ZONES
+                </div>
+
+                <div className="cj3-side-rule">
+                  <CalendarDays size={17} />
+                  UP TO 30 DAYS AHEAD
+                </div>
+
+                <Link
+                  to="/availability"
+                  className="cj3-side-link"
+                >
+                  EXPLORE TABLE AVAILABILITY
+                  <ArrowRight size={17} />
+                </Link>
+              </div>
+
+              <div className="cj3-my-bookings">
+                <span className="cj3-kicker">
+                  02 / MY DEMO REQUESTS
+                </span>
+
+                <h3>Saved moments.</h3>
+
+                {ownedReservations.length === 0 ? (
+                  <p>
+                    Reservations you create in
+                    this browser tab will appear
+                    here. No actual café is
+                    receiving the requests.
+                  </p>
+                ) : (
+                  ownedReservations
+                    .slice(0, 6)
+                    .map((reservation) => (
+                      <article
+                        key={reservation.id}
+                        className="cj3-booking-card"
+                      >
+                        <div>
+                          <strong>
+                            {reservation.tableId}
+                          </strong>
+
+                          <span>
+                            {reservation.status.toUpperCase()}
+                          </span>
+                        </div>
+
+                        <p>
+                          {formattedDate(
+                            reservation.startAt
+                          )}
+                        </p>
+
+                        <small>
+                          {
+                            reservation.reference
+                          }
+                        </small>
+
+                        {reservation.status ===
+                          "reserved" && (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              cancelBooking(
+                                reservation
+                              )
+                            }
+                          >
+                            CANCEL DEMO RESERVATION
+                            <X size={15} />
+                          </button>
+                        )}
+                      </article>
+                    ))
+                )}
+              </div>
+            </aside>
+          </div>
+        </div>
+      </section>
+
+      <section className="cj3-quiet-cta">
+        <span>
+          THE COFFEE JOURNAL / THE NEXT CHAPTER
+        </span>
+
+        <h2>
+          A table is better
+          <br />
+          <em>with coffee.</em>
+        </h2>
+
+        <Link to="/menu">
+          EXPLORE THE MENU
+          <ArrowRight size={19} />
+        </Link>
+      </section>
+    </div>
   );
 }

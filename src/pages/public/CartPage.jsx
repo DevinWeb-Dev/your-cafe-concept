@@ -1,121 +1,611 @@
-// YOUR CAFÉ — Batch 6 / checkout and ordering
-// Frontend-only: no orders leave this browser and no money is collected.
 import { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, ArrowRight, CheckCircle2, Coffee, Minus, Plus, ShoppingBag, Trash2 } from "lucide-react";
-import { formatPeso } from "../../data/config.js";
+
+import {
+  ArrowLeft,
+  ArrowRight,
+  Check,
+  Coffee,
+  Gift,
+  Minus,
+  Plus,
+  ShoppingBag,
+  Trash2,
+} from "lucide-react";
+
+import {
+  PROMOTIONS,
+  formatPeso,
+} from "../../data/config.js";
+
 import { quoteCart } from "../../engine/cafeEngine.js";
 import { useCafe } from "../../context/CafeContext.jsx";
 
-function choicesSummary(options = {}) {
-  return [options.size, options.temperature, options.milk, options.sweetness,
-    ...(options.extras || [])].filter(Boolean).join(" · ") || "Original preparation";
+import "../../styles/coffee-ordering.css";
+
+function optionSummary(options = {}) {
+  return [
+    options.size,
+    options.temperature,
+    options.milk,
+    options.sweetness,
+    ...(options.extras || []),
+  ]
+    .filter(Boolean)
+    .join(" / ") || "As prepared";
 }
 
 export default function CartPage() {
   const navigate = useNavigate();
-  const { cart, cartPreview, cartActions, placeCartOrder, tables } = useCafe();
-  const [orderType, setOrderType] = useState("pickup");
-  const [selectedTable, setSelectedTable] = useState("");
+
+  const {
+    cart,
+    cartPreview,
+    cartActions,
+    placeCartOrder,
+    tables,
+  } = useCafe();
+
+  const [type, setType] = useState("pickup");
+  const [tableId, setTableId] = useState("");
+
   const [nickname, setNickname] = useState("");
   const [note, setNote] = useState("");
   const [promoCode, setPromoCode] = useState("");
-  const [error, setError] = useState("");
+
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
 
-  const quotation = useMemo(() => {
-    if (!cart.length) return { data: cartPreview, error: "" };
-    try { return { data: quoteCart(cart, promoCode), error: "" }; }
-    catch (e) { return { data: cartPreview, error: e.message }; }
-  }, [cart, cartPreview, promoCode]);
+  const quote = useMemo(() => {
+    if (!cart.length) {
+      return {
+        data: cartPreview,
+        error: "",
+      };
+    }
 
-  const seatedTables = tables.filter((t) => t.visit);
+    try {
+      return {
+        data: quoteCart(cart, promoCode),
+        error: "",
+      };
+    } catch (e) {
+      return {
+        data: cartPreview,
+        error: e.message,
+      };
+    }
+  }, [
+    cart,
+    cartPreview,
+    promoCode,
+  ]);
+
+  const occupiedTables = tables.filter(
+    (table) => table.visit
+  );
+
+  const activePromos = PROMOTIONS.filter(
+    (item) => item.active
+  );
 
   function checkout(event) {
     event.preventDefault();
+
     setError("");
-    if (!cart.length) return setError("Your basket is empty.");
-    if (quotation.error) return setError(quotation.error);
-    if (orderType === "dinein" && selectedTable && !seatedTables.some((t) => t.id === selectedTable)) {
-      return setError("Choose an occupied table or leave the order unassigned.");
+
+    if (!cart.length) {
+      setError(
+        "Add something to the basket first."
+      );
+      return;
     }
+
+    if (!nickname.trim()) {
+      setError(
+        "Enter a demo nickname before continuing."
+      );
+      return;
+    }
+
+    if (quote.error) {
+      setError(quote.error);
+      return;
+    }
+
+    if (
+      type === "dinein" &&
+      tableId &&
+      !occupiedTables.some(
+        (table) => table.id === tableId
+      )
+    ) {
+      setError(
+        "Choose a currently occupied demo table or leave this order unassigned."
+      );
+      return;
+    }
+
     setBusy(true);
+
     try {
       const result = placeCartOrder({
-        type: orderType,
-        tableId: orderType === "dinein" && selectedTable ? selectedTable : null,
-        nickname,
+        type,
+
+        tableId:
+          type === "dinein"
+            ? tableId || null
+            : null,
+
+        nickname: nickname.trim(),
         note,
-        promoCode,
+        promoCode: promoCode.trim(),
       });
-      if (result.ok) navigate("/orders");
-      else setError(result.error || "Could not place the demonstration order.");
-    } finally { setBusy(false); }
+
+      if (result.ok) {
+        const reference =
+          result.state?.orders?.[0]?.reference ||
+          "";
+
+        navigate("/orders", {
+          state: { reference },
+        });
+      } else {
+        setError(
+          result.error ||
+            "Unable to prepare the demo order."
+        );
+      }
+    } finally {
+      setBusy(false);
+    }
   }
 
   return (
-    <section className="yc6-cart section cream page-section">
-      <style>{`
-        .yc6-cart{color:#302824}.yc6-cart .yc6-kicker{font-size:10px;font-weight:700;color:#a07850;letter-spacing:.2em}
-        .yc6-cart .yc6-head{padding:10px 0 35px}.yc6-cart h1{font:500 clamp(62px,8vw,112px)/.92 'Cormorant Garamond',Georgia,serif;letter-spacing:-.035em;margin:14px 0}
-        .yc6-cart h1 em{font-weight:400;color:#b58b5a}.yc6-cart .yc6-head p{font-size:13px;line-height:1.8;color:#8d7866}
-        .yc6-cart .yc6-grid{display:grid;grid-template-columns:minmax(0,1.28fr) minmax(315px,.72fr);gap:25px;align-items:start}
-        .yc6-cart .yc6-paper{border:1px solid #e4d6c4;background:#fffaf3;min-width:0;padding:clamp(19px,3vw,34px)}
-        .yc6-cart .yc6-paper h2{font:500 37px 'Cormorant Garamond',Georgia,serif;margin:0 0 22px}
-        .yc6-cart .yc6-line{display:grid;grid-template-columns:106px minmax(0,1fr);gap:17px;padding:19px 0;border-bottom:1px solid #e9ddd0}
-        .yc6-cart .yc6-line:first-of-type{padding-top:0}.yc6-cart .yc6-line img{width:106px;height:122px;object-fit:cover;background:#e6d9ca}
-        .yc6-cart .yc6-line-info{min-width:0}.yc6-cart .yc6-line-info h3{font:500 26px 'Cormorant Garamond',Georgia,serif;margin:0 0 5px}
-        .yc6-cart .yc6-line-info p{font-size:11px;color:#927c68;line-height:1.65;margin:0 0 12px;overflow-wrap:anywhere}
-        .yc6-cart .yc6-line-footer{display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap}
-        .yc6-cart .yc6-stepper{display:flex;align-items:center;border:1px solid #e1d0bc;gap:10px}.yc6-cart .yc6-stepper button{width:33px;height:32px;border:0;background:transparent;display:grid;place-items:center;color:#72533b}
-        .yc6-cart .yc6-stepper span{min-width:20px;text-align:center;font-weight:700;font-size:12px}.yc6-cart .yc6-remove{border:0;background:transparent;color:#a65a4d;padding:6px}
-        .yc6-cart .yc6-choice{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:8px 0 21px}.yc6-cart .yc6-choice button{padding:13px 10px;border:1px solid #d9c9b7;background:#faf5ed;color:#6c513e;font-size:12px;font-weight:700}
-        .yc6-cart .yc6-choice button.selected{background:#536449;border-color:#536449;color:#fff}.yc6-cart .yc6-field{display:grid;gap:8px;margin:0 0 17px}
-        .yc6-cart .yc6-field span{font-size:10px;color:#856747;letter-spacing:.1em;font-weight:700}.yc6-cart input,.yc6-cart select,.yc6-cart textarea{width:100%;min-width:0;border:1px solid #dacbb9;border-radius:3px;background:#faf6ef;color:#302824;padding:13px;font-size:12px}
-        .yc6-cart textarea{min-height:76px;resize:vertical}.yc6-cart .yc6-total{display:flex;justify-content:space-between;gap:10px;padding:13px 0;font-size:12px;color:#776555;border-bottom:1px solid #ebdfd0}
-        .yc6-cart .yc6-total b{color:#302824}.yc6-cart .yc6-total.final{border:0;font-size:17px;font-weight:800;padding:21px 0}.yc6-cart .yc6-total.final b{font-size:24px}
-        .yc6-cart .yc6-submit{display:flex;justify-content:center;align-items:center;gap:12px;width:100%;padding:18px;border:0;background:#3c2a20;color:white;font-weight:700;font-size:12px}
-        .yc6-cart .yc6-submit:disabled{opacity:.5}.yc6-cart .yc6-error{color:#a65342;font-size:12px;line-height:1.6;padding:12px;background:#fbeee9}
-        .yc6-cart .yc6-disclaimer{display:flex;align-items:flex-start;gap:9px;font-size:10px;line-height:1.6;color:#8b7c69;margin:16px 0 0}
-        .yc6-cart .yc6-empty{text-align:center;padding:85px 15px}.yc6-cart .yc6-empty svg{color:#ae8664}.yc6-cart .yc6-empty h2{font-size:47px}.yc6-cart .yc6-empty p{color:#8d7866;font-size:13px;margin:10px 0 27px}
-        @media(max-width:950px){.yc6-cart .yc6-grid{grid-template-columns:1fr}}
-        @media(max-width:530px){.yc6-cart .yc6-line{grid-template-columns:80px minmax(0,1fr);gap:12px}.yc6-cart .yc6-line img{width:80px;height:98px}.yc6-cart .yc6-line-info h3{font-size:24px}.yc6-cart .yc6-paper{padding:18px}.yc6-cart .yc6-choice{grid-template-columns:1fr 1fr}}
-      `}</style>
-      <div className="shell">
-        <header className="yc6-head"><span className="yc6-kicker">PREPARED WITH CARE · FRONTEND DEMO</span><h1>Your coffee <em>moments.</em></h1><p>Review your selections, customize your visit, and place an illustrative order.</p></header>
-        {cart.length === 0 ? <div className="yc6-paper yc6-empty"><Coffee size={40}/><h2>Your basket is waiting.</h2><p>A beautiful coffee moment begins with your first selection.</p><Link to="/menu" className="btn btn-primary">Explore the Menu <ArrowRight size={17}/></Link></div> :
-          <form className="yc6-grid" onSubmit={checkout}>
-            <div className="yc6-paper"><h2>Your selections <small>({cart.length})</small></h2>
+    <div className="cj2-checkout">
+      <section className="cj2-checkout-hero">
+        <div className="cj2-wide">
+          <span className="cj2-overline cj2-overline--light">
+            YOUR CAFÉ. / THE FINAL POUR
+          </span>
+
+          <h1>
+            Make it <em>a moment.</em>
+          </h1>
+
+          <div className="cj2-checkout-hero-foot">
+            <span>
+              03 / YOUR ORDER JOURNAL
+            </span>
+
+            <span>
+              EVERYTHING HERE IS A FRONTEND DEMO
+            </span>
+          </div>
+        </div>
+      </section>
+
+      <div className="cj2-wide cj2-checkout-content">
+        {cart.length === 0 ? (
+          <div className="cj2-checkout-empty">
+            <ShoppingBag
+              size={43}
+              strokeWidth={1.3}
+            />
+
+            <h2>
+              Your next favorite
+              <br />
+              <em>is waiting.</em>
+            </h2>
+
+            <p>
+              Nothing in your basket just yet.
+              Explore our illustrative menu
+              to begin.
+            </p>
+
+            <Link to="/menu">
+              FIND SOMETHING GOOD
+              <ArrowRight size={18} />
+            </Link>
+          </div>
+        ) : (
+          <form
+            className="cj2-checkout-grid"
+            onSubmit={checkout}
+          >
+            <div className="cj2-checkout-selection">
+              <div className="cj2-checkout-section-title">
+                <span>
+                  01 / THE SELECTION
+                </span>
+
+                <h2>
+                  Your <em>favorites.</em>
+                </h2>
+              </div>
+
               {cart.map((entry, index) => {
-                const line = cartPreview.lines[index];
-                return <article className="yc6-line" key={entry.key}>
-                  <img src={line?.image} alt="" loading="lazy" />
-                  <div className="yc6-line-info"><h3>{line?.name || entry.productId}</h3><p>{choicesSummary(entry.options)}</p>
-                    <div className="yc6-line-footer"><strong>{formatPeso(line?.lineTotal || 0)}</strong>
-                      <div className="yc6-stepper"><button type="button" onClick={() => cartActions.quantity(entry.key, entry.quantity - 1)} aria-label="Decrease quantity"><Minus size={14}/></button><span>{entry.quantity}</span><button type="button" disabled={entry.quantity >= 30} onClick={() => cartActions.quantity(entry.key, entry.quantity + 1)} aria-label="Increase quantity"><Plus size={14}/></button></div>
-                      <button className="yc6-remove" type="button" onClick={() => cartActions.remove(entry.key)} aria-label={`Remove ${line?.name || "item"}`}><Trash2 size={18}/></button>
+                const line =
+                  cartPreview.lines[index];
+
+                return (
+                  <article
+                    key={entry.key}
+                    className="cj2-checkout-line"
+                  >
+                    <div className="cj2-checkout-photo">
+                      {line?.image ? (
+                        <img
+                          src={line.image}
+                          alt=""
+                          loading="lazy"
+                        />
+                      ) : (
+                        <Coffee size={25} />
+                      )}
+
+                      <span>
+                        {String(index + 1).padStart(
+                          2,
+                          "0"
+                        )}
+                      </span>
                     </div>
-                  </div>
-                </article>;
+
+                    <div className="cj2-checkout-item-body">
+                      <span className="cj2-overline">
+                        PREPARED YOUR WAY
+                      </span>
+
+                      <h3>
+                        {line?.name ||
+                          entry.productId}
+                      </h3>
+
+                      <p>
+                        {optionSummary(
+                          entry.options
+                        )}
+                      </p>
+
+                      <div className="cj2-checkout-item-foot">
+                        <strong>
+                          {formatPeso(
+                            line?.lineTotal || 0
+                          )}
+                        </strong>
+
+                        <div className="cj2-stepper cj2-stepper--small">
+                          <button
+                            type="button"
+                            aria-label={`Decrease ${
+                              line?.name || "item"
+                            } quantity`}
+                            onClick={() =>
+                              cartActions.quantity(
+                                entry.key,
+                                entry.quantity - 1
+                              )
+                            }
+                          >
+                            <Minus size={15} />
+                          </button>
+
+                          <span>
+                            {entry.quantity}
+                          </span>
+
+                          <button
+                            type="button"
+                            disabled={
+                              entry.quantity >= 30
+                            }
+                            aria-label={`Increase ${
+                              line?.name || "item"
+                            } quantity`}
+                            onClick={() =>
+                              cartActions.quantity(
+                                entry.key,
+                                entry.quantity + 1
+                              )
+                            }
+                          >
+                            <Plus size={15} />
+                          </button>
+                        </div>
+
+                        <button
+                          type="button"
+                          className="cj2-remove"
+                          onClick={() =>
+                            cartActions.remove(
+                              entry.key
+                            )
+                          }
+                          aria-label={`Remove ${
+                            line?.name || "item"
+                          }`}
+                        >
+                          <Trash2 size={16} />
+                          REMOVE
+                        </button>
+                      </div>
+                    </div>
+                  </article>
+                );
               })}
-              <div style={{marginTop:24}}><Link to="/menu" className="text-link"><ArrowLeft size={15}/> Continue exploring menu</Link></div>
+
+              <Link
+                to="/menu"
+                className="cj2-back-menu"
+              >
+                <ArrowLeft size={16} />
+                ADD SOMETHING ELSE
+              </Link>
+
+              <div className="cj2-checkout-promise">
+                <Coffee size={22} />
+
+                Each price is an illustrative
+                calculation from the existing
+                café pricing engine.
+              </div>
             </div>
-            <aside className="yc6-paper"><h2>Order details.</h2>
-              <span className="yc6-kicker">HOW WOULD YOU LIKE YOUR COFFEE?</span>
-              <div className="yc6-choice"><button type="button" className={orderType === "pickup" ? "selected" : ""} onClick={() => { setOrderType("pickup"); setSelectedTable(""); }}>Pickup</button><button type="button" className={orderType === "dinein" ? "selected" : ""} onClick={() => setOrderType("dinein")}>Dine-in</button></div>
-              {orderType === "dinein" && <label className="yc6-field"><span>TABLE (OPTIONAL — FOR CHECKED-IN GUESTS)</span><select value={selectedTable} onChange={(e) => setSelectedTable(e.target.value)}><option value="">Unassigned dine-in order</option>{seatedTables.map((t) => <option key={t.id} value={t.id}>{t.id} — {t.visit.nickname}</option>)}</select></label>}
-              <label className="yc6-field"><span>CUSTOMER NICKNAME</span><input maxLength={40} value={nickname} onChange={(e) => setNickname(e.target.value)} placeholder="e.g. Coffee Lover" /></label>
-              <label className="yc6-field"><span>ORDER NOTES</span><textarea maxLength={220} value={note} onChange={(e) => setNote(e.target.value)} placeholder="Any special request?" /></label>
-              <label className="yc6-field"><span>PROMO CODE (OPTIONAL)</span><input value={promoCode} onChange={(e) => setPromoCode(e.target.value.toUpperCase())} placeholder="e.g. BREW5" /></label>
-              {quotation.error && <p className="yc6-error" role="alert"><Coffee size={14} style={{verticalAlign:"middle"}}/> {quotation.error}</p>}
-              <div className="yc6-total"><span>Subtotal</span><b>{formatPeso(quotation.data.subtotal)}</b></div><div className="yc6-total"><span>Discount</span><b>− {formatPeso(quotation.data.discount)}</b></div>
-              <div className="yc6-total final"><span>Total</span><b>{formatPeso(quotation.data.total)}</b></div>
-              {error && <p role="alert" className="yc6-error">{error}</p>}
-              <button type="submit" className="yc6-submit" disabled={busy || Boolean(quotation.error)}><ShoppingBag size={18}/> {busy ? "Processing..." : "Place Demo Order"} <ArrowRight size={17}/></button>
-              <p className="yc6-disclaimer"><CheckCircle2 size={16}/> Demo only. No actual payment is taken and no order is transmitted to a real café.</p>
+
+            <aside className="cj2-checkout-summary">
+              <div className="cj2-checkout-section-title">
+                <span>
+                  02 / THE FINISHING DETAILS
+                </span>
+
+                <h2>
+                  Almost <em>there.</em>
+                </h2>
+              </div>
+
+              <span className="cj2-summary-label">
+                HOW WOULD YOU LIKE IT?
+              </span>
+
+              <div
+                className="cj2-order-types"
+                role="group"
+                aria-label="Order type"
+              >
+                <button
+                  type="button"
+                  aria-pressed={
+                    type === "pickup"
+                  }
+                  className={
+                    type === "pickup"
+                      ? "active"
+                      : ""
+                  }
+                  onClick={() => {
+                    setType("pickup");
+                    setTableId("");
+                  }}
+                >
+                  PICKUP
+
+                  <small>
+                    TAKE IT WITH YOU
+                  </small>
+                </button>
+
+                <button
+                  type="button"
+                  aria-pressed={
+                    type === "dinein"
+                  }
+                  className={
+                    type === "dinein"
+                      ? "active"
+                      : ""
+                  }
+                  onClick={() =>
+                    setType("dinein")
+                  }
+                >
+                  DINE-IN
+
+                  <small>
+                    STAY FOR A WHILE
+                  </small>
+                </button>
+              </div>
+
+              {type === "dinein" && (
+                <label className="cj2-checkout-field">
+                  TABLE ASSIGNMENT
+
+                  <small>
+                    OPTIONAL · FOR CHECKED-IN DEMO GUESTS
+                  </small>
+
+                  <select
+                    value={tableId}
+                    onChange={(e) =>
+                      setTableId(e.target.value)
+                    }
+                  >
+                    <option value="">
+                      Unassigned dine-in order
+                    </option>
+
+                    {occupiedTables.map(
+                      (table) => (
+                        <option
+                          key={table.id}
+                          value={table.id}
+                        >
+                          {table.id} —{" "}
+                          {table.visit.nickname}
+                        </option>
+                      )
+                    )}
+                  </select>
+                </label>
+              )}
+
+              <label className="cj2-checkout-field">
+                DEMO CUSTOMER NICKNAME
+
+                <small>REQUIRED</small>
+
+                <input
+                  required
+                  maxLength={40}
+                  value={nickname}
+                  onChange={(e) =>
+                    setNickname(e.target.value)
+                  }
+                  placeholder="How should we call you?"
+                  autoComplete="off"
+                />
+              </label>
+
+              <label className="cj2-checkout-field">
+                A NOTE FOR THE BARISTA
+
+                <small>OPTIONAL</small>
+
+                <textarea
+                  rows={3}
+                  maxLength={220}
+                  value={note}
+                  onChange={(e) =>
+                    setNote(e.target.value)
+                  }
+                  placeholder="Any special details?"
+                />
+              </label>
+
+              <div className="cj2-promo-header">
+                <Gift size={17} />
+
+                THE LITTLE EXTRAS
+
+                <span>
+                  DEMO PROMOS
+                </span>
+              </div>
+
+              <label className="cj2-checkout-field">
+                PROMO CODE
+
+                <input
+                  value={promoCode}
+                  onChange={(e) =>
+                    setPromoCode(
+                      e.target.value.toUpperCase()
+                    )
+                  }
+                  placeholder="Enter a demo code"
+                  autoComplete="off"
+                />
+              </label>
+
+              <div className="cj2-promo-pills">
+                {activePromos.map((promo) => (
+                  <button
+                    type="button"
+                    key={promo.id}
+                    className={
+                      promoCode === promo.code
+                        ? "selected"
+                        : ""
+                    }
+                    onClick={() =>
+                      setPromoCode(promo.code)
+                    }
+                    title={promo.description}
+                  >
+                    {promo.code}
+                  </button>
+                ))}
+              </div>
+
+              {quote.error && (
+                <p
+                  className="cj2-inline-error"
+                  role="alert"
+                >
+                  {quote.error}
+                </p>
+              )}
+
+              <div className="cj2-summary-money">
+                <div>
+                  <span>SUBTOTAL</span>
+
+                  <strong>
+                    {formatPeso(
+                      quote.data.subtotal || 0
+                    )}
+                  </strong>
+                </div>
+
+                <div>
+                  <span>DISCOUNT</span>
+
+                  <strong>
+                    −{" "}
+                    {formatPeso(
+                      quote.data.discount || 0
+                    )}
+                  </strong>
+                </div>
+
+                <div className="cj2-grand-total">
+                  <span>DEMO TOTAL</span>
+
+                  <strong>
+                    {formatPeso(
+                      quote.data.total || 0
+                    )}
+                  </strong>
+                </div>
+              </div>
+
+              {error && (
+                <p
+                  className="cj2-inline-error"
+                  role="alert"
+                >
+                  {error}
+                </p>
+              )}
+
+              <button
+                type="submit"
+                className="cj2-place-order"
+                disabled={
+                  busy || Boolean(quote.error)
+                }
+              >
+                {busy
+                  ? "PREPARING..."
+                  : "PLACE DEMO ORDER"}
+
+                <ArrowRight size={18} />
+              </button>
+
+              <p className="cj2-summary-disclaimer">
+                <Check size={16} />
+
+                No money is collected. This creates
+                a local demonstration order that
+                can appear in the staff demo board
+                on the same browser.
+              </p>
             </aside>
-          </form>}
+          </form>
+        )}
       </div>
-    </section>
+    </div>
   );
 }

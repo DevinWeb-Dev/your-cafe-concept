@@ -1,162 +1,457 @@
-import { useMemo, useState } from "react";
-import { ArrowRight, Check, Clock3, Coffee, Search, ShoppingBag, XCircle } from "lucide-react";
-import { Link } from "react-router-dom";
-import { ORDER_STATUSES, formatPeso } from "../data/config.js";
+import {
+  useMemo,
+  useState,
+} from "react";
+
+import {
+  Link,
+  useLocation,
+} from "react-router-dom";
+
+import {
+  ArrowRight,
+  Check,
+  Clock3,
+  Coffee,
+  Search,
+  ShoppingBag,
+  XCircle,
+} from "lucide-react";
+
+import {
+  ORDER_STATUSES,
+  formatPeso,
+} from "../data/config.js";
+
 import { useCafe } from "../context/CafeContext.jsx";
 
-const STEPS = [
-  { id: "received", label: "Received", description: "Order entered our demo queue" },
-  { id: "accepted", label: "Accepted", description: "Staff has accepted the order" },
-  { id: "preparing", label: "Preparing", description: "Being prepared by our barista" },
-  { id: "ready", label: "Ready", description: "Ready for pickup or serving" },
-  { id: "completed", label: "Completed", description: "Demo order fulfilled" },
+import "../styles/coffee-ordering.css";
+
+const STAGES = [
+  [
+    "received",
+    "Received",
+    "Your order has joined the demo queue",
+  ],
+  [
+    "accepted",
+    "Accepted",
+    "The staff demo accepted the order",
+  ],
+  [
+    "preparing",
+    "Preparing",
+    "Your selection is being prepared",
+  ],
+  [
+    "ready",
+    "Ready",
+    "Prepared for pickup or serving",
+  ],
+  [
+    "completed",
+    "Completed",
+    "This local order is marked fulfilled",
+  ],
 ];
 
-function localTime(timestamp) {
-  return timestamp
-    ? new Intl.DateTimeFormat("en-PH", {
+function displayTime(value) {
+  if (!value) return "Not available";
+
+  const number = new Date(value);
+
+  return Number.isNaN(number.getTime())
+    ? "Not available"
+    : new Intl.DateTimeFormat("en-PH", {
         dateStyle: "medium",
         timeStyle: "short",
-      }).format(new Date(timestamp))
-    : "Not available";
+      }).format(number);
 }
 
-/**
- * Order status reads the same local demo orders as Staff > Barista.
- * It does NOT contact a café server or expose real tracking.
- */
-export default function OrderStatus({ initialReference = "" }) {
+export default function OrderStatus({
+  initialReference = "",
+}) {
+  const location = useLocation();
   const { orders, now } = useCafe();
-  const [searchText, setSearchText] = useState(initialReference);
-  const [selectedReference, setSelectedReference] = useState(initialReference.trim());
 
-  const selected = useMemo(() => {
-    if (selectedReference) {
-      return orders.find(
-        (o) => o.reference.toLowerCase() === selectedReference.toLowerCase()
-      ) || null;
-    }
-    return orders[0] || null;
-  }, [orders, selectedReference]);
+  const fromCheckout =
+    location.state?.reference ||
+    initialReference;
 
-  const latest = useMemo(() => orders.slice(0, 4), [orders]);
-  const currentStep = selected ? STEPS.findIndex((s) => s.id === selected.status) : -1;
-  const cancelled = selected?.status === "cancelled";
-  const orderAge = selected?.createdAt
-    ? Math.max(0, Math.floor((now - selected.createdAt) / 60000))
+  const [search, setSearch] =
+    useState(fromCheckout);
+
+  const [reference, setReference] =
+    useState(fromCheckout.trim());
+
+  const selected = useMemo(
+    () =>
+      reference
+        ? orders.find(
+            (item) =>
+              item.reference.toLowerCase() ===
+              reference.toLowerCase()
+          ) || null
+        : orders[0] || null,
+    [orders, reference]
+  );
+
+  const recent = orders.slice(0, 4);
+
+  const currentStep = selected
+    ? STAGES.findIndex(
+        ([id]) => id === selected.status
+      )
+    : -1;
+
+  const cancelled =
+    selected?.status === "cancelled";
+
+  const age = selected?.createdAt
+    ? Math.max(
+        0,
+        Math.floor(
+          (now - selected.createdAt) / 60000
+        )
+      )
     : null;
 
-  function handleSearch(event) {
-    event.preventDefault();
-    setSelectedReference(searchText.trim());
-  }
-
   return (
-    <section className="yc-track-section" aria-labelledby="yc-track-title">
-      <div className="yc-track-container">
-        <div className="yc-track-intro">
-          <span className="yc-track-kicker"><Coffee size={15} /> YOUR COFFEE MOMENT</span>
-          <h1 id="yc-track-title">Every order has <em>a little story.</em></h1>
-          <p>Follow your coffee from the moment it enters our demonstration queue until it is ready.</p>
-          <div className="yc-track-demo"><Clock3 size={15} /> Same-browser prototype · Not a real café tracking service</div>
-        </div>
+    <div className="cj2-tracking">
+      <section className="cj2-tracking-hero">
+        <div className="cj2-wide">
+          <span className="cj2-overline cj2-overline--light">
+            YOUR CAFÉ. / THE ORDER JOURNAL
+          </span>
 
-        <form className="yc-track-search" onSubmit={handleSearch}>
-          <label htmlFor="yc-order-reference">ORDER REFERENCE</label>
-          <div className="yc-track-searchrow">
+          <h1>
+            Every cup has
+            <br />
+            <em>a little story.</em>
+          </h1>
+
+          <p>
+            Follow the progress of an order
+            created in this browser, from
+            received to ready. This is a
+            staff-connected demo, not live
+            order tracking.
+          </p>
+
+          <span className="cj2-tracking-hero-meta">
+            04 / THE JOURNEY FROM CUP TO CUSTOMER
+          </span>
+        </div>
+      </section>
+
+      <div className="cj2-wide cj2-tracking-content">
+        <form
+          className="cj2-track-search"
+          onSubmit={(event) => {
+            event.preventDefault();
+            setReference(search.trim());
+          }}
+        >
+          <label htmlFor="cj2-reference">
+            FIND YOUR DEMO ORDER
+          </label>
+
+          <div>
+            <Search size={19} />
+
             <input
-              id="yc-order-reference"
-              value={searchText}
-              onChange={(event) => setSearchText(event.target.value)}
+              id="cj2-reference"
+              value={search}
+              onChange={(e) =>
+                setSearch(e.target.value)
+              }
               placeholder="CAFE-DEMO-..."
-              spellCheck="false"
               autoComplete="off"
             />
-            <button type="submit"><Search size={17} /> Track order</button>
+
+            <button type="submit">
+              TRACK ORDER
+              <ArrowRight size={17} />
+            </button>
           </div>
-          <small>Only orders created in this browser can be found.</small>
+
+          <small>
+            Only orders saved in this browser
+            can appear here.
+          </small>
         </form>
 
         {!selected ? (
-          <div className="yc-track-empty">
-            <ShoppingBag size={35} strokeWidth={1.3} />
-            <h2>{orders.length ? "No matching demo order." : "No coffee in the queue yet."}</h2>
-            <p>{orders.length ? "Double-check the reference, or select a recent order below." : "Explore the menu, customize your drink, and place a simulated order to see the journey."}</p>
-            <Link to="/menu">Explore the menu <ArrowRight size={17} /></Link>
+          <div className="cj2-track-empty">
+            <Coffee
+              size={45}
+              strokeWidth={1.3}
+            />
+
+            <h2>
+              {orders.length
+                ? "We couldn't find that."
+                : "No coffee in the queue."}
+            </h2>
+
+            <p>
+              {orders.length
+                ? "Double-check the demo reference, or select a recent order below."
+                : "Browse our menu and place a demo order to see its progress here."}
+            </p>
+
+            <Link to="/menu">
+              EXPLORE THE MENU
+              <ArrowRight size={17} />
+            </Link>
           </div>
         ) : (
-          <article className="yc-track-card">
-            <div className="yc-track-cardtop">
+          <article className="cj2-track-card">
+            <div className="cj2-track-card-head">
               <div>
-                <small>ORDER REFERENCE</small>
-                <h2>{selected.reference}</h2>
-                <span>{selected.type === "pickup" ? "Pickup order" : "Dine-in order"}{selected.tableId ? ` · ${selected.tableId}` : ""}</span>
+                <span>
+                  ORDER REFERENCE / YOUR CAFÉ.
+                </span>
+
+                <h2>
+                  {selected.reference}
+                </h2>
+
+                <p>
+                  {selected.type === "pickup"
+                    ? "Pickup"
+                    : "Dine-in"}
+
+                  {selected.tableId
+                    ? ` / ${selected.tableId}`
+                    : ""}
+                </p>
               </div>
-              <span className={`yc-track-status yc-track-status--${selected.status}`}>
-                {cancelled ? <XCircle size={15} /> : selected.status === "completed" ? <Check size={15} /> : <Clock3 size={15} />}
-                {ORDER_STATUSES[selected.status]?.label || selected.status}
-              </span>
+
+              <strong className="cj2-track-status">
+                {cancelled ? (
+                  <XCircle size={18} />
+                ) : selected.status ===
+                  "completed" ? (
+                  <Check size={18} />
+                ) : (
+                  <Clock3 size={18} />
+                )}
+
+                {ORDER_STATUSES[
+                  selected.status
+                ]?.label || selected.status}
+              </strong>
             </div>
 
             {cancelled ? (
-              <div className="yc-track-cancelled"><XCircle size={23} /><div><strong>Order cancelled</strong><p>This demonstration order will not advance through preparation.</p></div></div>
+              <div className="cj2-track-cancelled">
+                <XCircle size={26} />
+
+                <div>
+                  <strong>
+                    Order cancelled
+                  </strong>
+
+                  <p>
+                    This demo order will not
+                    progress any further.
+                  </p>
+                </div>
+              </div>
             ) : (
-              <ol className="yc-track-steps" aria-label="Order preparation progress">
-                {STEPS.map((step, index) => {
-                  const done = currentStep >= index;
-                  const current = currentStep === index;
-                  return (
-                    <li key={step.id} className={`${done ? "is-done" : ""} ${current ? "is-current" : ""}`} aria-current={current ? "step" : undefined}>
-                      <span className="yc-track-stepicon">{done ? <Check size={17} /> : String(index + 1).padStart(2, "0")}</span>
-                      <div><strong>{step.label}</strong><small>{step.description}</small></div>
-                    </li>
-                  );
-                })}
+              <ol
+                className="cj2-track-progress"
+                aria-label="Order preparation steps"
+              >
+                {STAGES.map(
+                  ([id, name, detail], index) => {
+                    const reached =
+                      index <= currentStep;
+
+                    const active =
+                      index === currentStep;
+
+                    return (
+                      <li
+                        key={id}
+                        className={`${
+                          reached
+                            ? "is-done"
+                            : ""
+                        } ${
+                          active
+                            ? "is-current"
+                            : ""
+                        }`}
+                        aria-current={
+                          active
+                            ? "step"
+                            : undefined
+                        }
+                      >
+                        <span className="cj2-stage-icon">
+                          {reached ? (
+                            <Check size={18} />
+                          ) : (
+                            String(
+                              index + 1
+                            ).padStart(2, "0")
+                          )}
+                        </span>
+
+                        <strong>
+                          {name}
+                        </strong>
+
+                        <small>
+                          {detail}
+                        </small>
+                      </li>
+                    );
+                  }
+                )}
               </ol>
             )}
 
-            <div className="yc-track-detailgrid">
-              <div><small>ORDERED</small><strong>{localTime(selected.createdAt)}</strong></div>
-              <div><small>LAST UPDATED</small><strong>{localTime(selected.updatedAt)}</strong></div>
-              <div><small>TIME SINCE ORDER</small><strong>{orderAge !== null ? `${orderAge} minute${orderAge === 1 ? "" : "s"}` : "—"}</strong></div>
-              <div><small>PAYMENT</small><strong>{selected.paymentStatus === "paid" ? "Recorded (demo)" : "Not recorded"}</strong></div>
+            <div className="cj2-track-details">
+              <div>
+                <span>PLACED</span>
+
+                <strong>
+                  {displayTime(
+                    selected.createdAt
+                  )}
+                </strong>
+              </div>
+
+              <div>
+                <span>LAST UPDATED</span>
+
+                <strong>
+                  {displayTime(
+                    selected.updatedAt
+                  )}
+                </strong>
+              </div>
+
+              <div>
+                <span>ELAPSED</span>
+
+                <strong>
+                  {age === null
+                    ? "—"
+                    : `${age} min`}
+                </strong>
+              </div>
+
+              <div>
+                <span>PAYMENT</span>
+
+                <strong>
+                  {selected.paymentStatus ===
+                  "paid"
+                    ? "Recorded in demo"
+                    : "Not recorded"}
+                </strong>
+              </div>
             </div>
 
-            <div className="yc-track-orderlines">
-              <h3>Your selections</h3>
-              {(selected.lines || []).map((line, index) => (
-                <div className="yc-track-orderline" key={`${line.productId}-${index}`}>
-                  <span><b>{line.quantity}×</b> {line.name}</span>
-                  <strong>{formatPeso(line.lineTotal)}</strong>
-                </div>
-              ))}
-              <div className="yc-track-total"><span>Order total</span><strong>{formatPeso(selected.total)}</strong></div>
+            <div className="cj2-track-bill">
+              <h3>
+                The <em>selection.</em>
+              </h3>
+
+              {(selected.lines || []).map(
+                (line, index) => (
+                  <div
+                    key={`${line.productId}-${index}`}
+                  >
+                    <span>
+                      {line.quantity} ×{" "}
+                      {line.name}
+                    </span>
+
+                    <strong>
+                      {formatPeso(
+                        line.lineTotal
+                      )}
+                    </strong>
+                  </div>
+                )
+              )}
+
+              <div className="cj2-track-bill-total">
+                <span>
+                  DEMO ORDER TOTAL
+                </span>
+
+                <strong>
+                  {formatPeso(
+                    selected.total
+                  )}
+                </strong>
+              </div>
             </div>
           </article>
         )}
 
-        {latest.length > 0 && (
-          <div className="yc-track-recent">
-            <h3>Recent demo orders</h3>
-            <div className="yc-track-recentgrid">
-              {latest.map((order) => (
+        {recent.length > 0 && (
+          <section className="cj2-track-recent">
+            <span className="cj2-overline">
+              RECENT ACTIVITY / THIS BROWSER
+            </span>
+
+            <h2>
+              From the <em>journal.</em>
+            </h2>
+
+            <div className="cj2-track-recent-list">
+              {recent.map((order) => (
                 <button
                   key={order.id}
-                  className={selected?.id === order.id ? "is-active" : ""}
                   type="button"
+                  className={
+                    selected?.id === order.id
+                      ? "active"
+                      : ""
+                  }
                   onClick={() => {
-                    setSelectedReference(order.reference);
-                    setSearchText(order.reference);
+                    setReference(
+                      order.reference
+                    );
+
+                    setSearch(
+                      order.reference
+                    );
                   }}
                 >
-                  <strong>{order.reference}</strong>
-                  <span>{ORDER_STATUSES[order.status]?.label || order.status} <ArrowRight size={14} /></span>
+                  <span>
+                    {order.reference}
+                  </span>
+
+                  <strong>
+                    {ORDER_STATUSES[
+                      order.status
+                    ]?.label || order.status}
+                  </strong>
+
+                  <ArrowRight size={17} />
                 </button>
               ))}
             </div>
-          </div>
+          </section>
         )}
+
+        <div className="cj2-track-note">
+          <ShoppingBag size={19} />
+
+          Changes to the local order status
+          can be simulated in the staff
+          Barista board. No real café order
+          is being processed.
+        </div>
       </div>
-    </section>
+    </div>
   );
 }

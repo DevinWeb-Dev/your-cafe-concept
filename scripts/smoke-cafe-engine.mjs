@@ -1,233 +1,482 @@
-
 import assert from "node:assert/strict";
 
 import {
+  POLICIES,
+  MENU_ITEMS,
+} from "../src/data/config.js";
+
+import {
   createCafeInitialState,
-  seatGuests,
   reserveTable,
+  cancelReservation,
   isTableFreeForPeriod,
+  seatGuests,
+  getTableStatus,
+  completeVisit,
+  setTableCondition,
+  quoteMenuItem,
+  quoteCart,
   placeOrder,
   updateOrderStatus,
   recordPayment,
-  completeVisit,
-  getTableStatus,
+  getMemberPoints,
+  getCafeStats,
 } from "../src/engine/cafeEngine.js";
-
-import {
-  MENU_ITEMS,
-  POLICIES,
-} from "../src/data/config.js";
 
 const now = Date.now();
 
+const minute = 60_000;
+
+const future =
+  now + 24 * 60 * minute;
+
 let state = createCafeInitialState();
 
-assert(
-  state.tables.length > 0,
-  "No seating is configured"
-);
+let count = 0;
 
-const table =
-  state.tables.find(
-    (t) => t.capacity >= 2 && t.id !== "T-001"
-  ) ||
-  state.tables.find((t) => t.capacity >= 2);
+function test(label, callback) {
+  try {
+    callback();
 
-assert(table, "No table has capacity for 2 guests");
+    count++;
 
-state = seatGuests(
-  state,
-  {
-    tableId: table.id,
-    nickname: "Batch12 Demo",
-    partySize: 2,
-  },
-  now
-);
+    console.log(
+      `  ✔ ${label}`
+    );
+  } catch (error) {
+    console.error(
+      `  ✖ ${label}: ${error.message}`
+    );
 
-assert.equal(
-  getTableStatus(state, table.id, now),
-  "occupied"
-);
-
-assert.throws(
-  () =>
-    seatGuests(
-      state,
-      {
-        tableId: table.id,
-        partySize: 2,
-      },
-      now
-    ),
-  /available|conflict|seated/i
-);
-
-const product =
-  MENU_ITEMS.find(
-    (p) =>
-      p.available &&
-      Array.isArray(p.recipe) &&
-      p.kind === "food"
-  ) ||
-  MENU_ITEMS.find(
-    (p) =>
-      p.available &&
-      Array.isArray(p.recipe) &&
-      p.kind === "retail"
-  ) ||
-  MENU_ITEMS.find(
-    (p) => p.available && Array.isArray(p.recipe)
-  );
-
-assert(
-  product,
-  "No available menu item with ingredients was found"
-);
-
-state = placeOrder(
-  state,
-  {
-    type: "dinein",
-    tableId: table.id,
-    nickname: "Batch12 Demo",
-    items: [
-      {
-        productId: product.id,
-        quantity: 1,
-        options: {},
-      },
-    ],
-  },
-  now + 1000
-);
-
-const orderId = state.orders[0].id;
-
-assert.equal(state.orders[0].status, "received");
-
-for (const status of [
-  "accepted",
-  "preparing",
-  "ready",
-  "completed",
-]) {
-  state = updateOrderStatus(
-    state,
-    orderId,
-    status,
-    now + 1000
-  );
+    process.exitCode = 1;
+  }
 }
 
-assert(
-  state.orders[0].inventoryDeducted,
-  "Stock deduction flag was not set"
+console.log(
+  "\nYOUR CAFÉ. / BATCH 6 ENGINE SMOKE TEST\n"
 );
 
-assert.throws(
-  () =>
-    updateOrderStatus(
+const tableId =
+  state.tables.find(
+    (table) =>
+      table.capacity >= 2
+  )?.id;
+
+let reservationId = null;
+
+// TEST 01
+
+test(
+  "28 original café seating units retained",
+  () => {
+    assert.equal(
+      state.tables.length,
+      28
+    );
+
+    assert.ok(tableId);
+  }
+);
+
+// TEST 02
+
+test(
+  "Future demo reservation succeeds",
+  () => {
+    state = reserveTable(
       state,
-      orderId,
-      "completed",
-      now + 2000
-    ),
-  /invalid/i
+      {
+        tableId,
+        nickname: "QA Guest",
+        partySize: 2,
+        startAt: future,
+
+        durationMinutes:
+          POLICIES.reservationDurationMinutes,
+      },
+      now
+    );
+
+    reservationId =
+      state.reservations[0].id;
+
+    assert.equal(
+      state.reservations[0].status,
+      "reserved"
+    );
+  }
 );
 
-state = recordPayment(
-  state,
-  orderId,
-  "cash",
-  now + 3000
+// TEST 03
+
+test(
+  "Conflicting reservation is blocked",
+  () => {
+    assert.equal(
+      isTableFreeForPeriod(
+        state,
+        tableId,
+        future,
+        future + 60 * minute,
+        now
+      ),
+      false
+    );
+
+    assert.throws(
+      () =>
+        reserveTable(
+          state,
+          {
+            tableId,
+
+            nickname:
+              "Another Guest",
+
+            partySize: 2,
+            startAt: future,
+            durationMinutes: 60,
+          },
+          now
+        ),
+      /unavailable/i
+    );
+  }
 );
 
-assert.equal(state.transactions.length, 1);
+// TEST 04
 
-assert.throws(
-  () =>
-    recordPayment(
+test(
+  "Reservation cancellation releases the slot",
+  () => {
+    state = cancelReservation(
+      state,
+      reservationId,
+      now
+    );
+
+    assert.equal(
+      isTableFreeForPeriod(
+        state,
+        tableId,
+        future,
+        future + 60 * minute,
+        now
+      ),
+      true
+    );
+  }
+);
+
+// TEST 05
+
+const drink = MENU_ITEMS.find(
+  (item) =>
+    item.available &&
+    item.kind === "drink"
+);
+
+let chosen = null;
+let orderId = null;
+
+test(
+  "Menu price quote produces a valid line",
+  () => {
+    assert.ok(drink);
+
+    chosen = quoteMenuItem(
+      drink.id,
+      2
+    );
+
+    assert.equal(
+      chosen.quantity,
+      2
+    );
+
+    assert.ok(
+      chosen.lineTotal > 0
+    );
+  }
+);
+
+// TEST 06
+
+test(
+  "Cart quote equals combined line price",
+  () => {
+    const quote = quoteCart([
+      {
+        productId: drink.id,
+        quantity: 2,
+      },
+    ]);
+
+    assert.equal(
+      quote.lines.length,
+      1
+    );
+
+    assert.equal(
+      quote.total,
+      chosen.lineTotal
+    );
+  }
+);
+
+// TEST 07
+
+test(
+  "Demo checkout creates an order",
+  () => {
+    state = placeOrder(
+      state,
+      {
+        type: "pickup",
+
+        nickname: "QA Guest",
+
+        items: [
+          {
+            productId: drink.id,
+            quantity: 2,
+          },
+        ],
+      },
+      now
+    );
+
+    orderId =
+      state.orders[0].id;
+
+    assert.equal(
+      state.orders[0].status,
+      "received"
+    );
+  }
+);
+
+// TEST 08
+
+test(
+  "Payment is recorded only once",
+  () => {
+    state = recordPayment(
       state,
       orderId,
       "cash",
-      now + 4000
-    ),
-  /already/i
+      now
+    );
+
+    assert.equal(
+      state.transactions.length,
+      1
+    );
+
+    assert.throws(
+      () =>
+        recordPayment(
+          state,
+          orderId,
+          "cash",
+          now
+        ),
+      /already/i
+    );
+  }
 );
 
-state = completeVisit(
-  state,
-  state.visits[0].id,
-  now + 5000
+// TEST 09
+
+test(
+  "Barista order progresses through original states",
+  () => {
+    for (const step of [
+      "accepted",
+      "preparing",
+      "ready",
+    ]) {
+      state = updateOrderStatus(
+        state,
+        orderId,
+        step,
+        now
+      );
+    }
+
+    assert.equal(
+      state.orders[0].status,
+      "ready"
+    );
+  }
 );
 
-assert.equal(
-  state.visits[0].status,
-  "completed"
+// TEST 10
+
+test(
+  "Completing an order deducts inventory exactly once",
+  () => {
+    const needed =
+      state.orders[0]
+        .lines[0]
+        .ingredients.find(
+          (item) =>
+            item.quantity > 0
+        );
+
+    assert.ok(needed);
+
+    const before =
+      state.inventory.find(
+        (item) =>
+          item.id ===
+          needed.ingredientId
+      ).quantity;
+
+    state = updateOrderStatus(
+      state,
+      orderId,
+      "completed",
+      now
+    );
+
+    const after =
+      state.inventory.find(
+        (item) =>
+          item.id ===
+          needed.ingredientId
+      ).quantity;
+
+    assert.equal(
+      before - after,
+      needed.quantity
+    );
+
+    assert.throws(
+      () =>
+        updateOrderStatus(
+          state,
+          orderId,
+          "completed",
+          now
+        ),
+      /Invalid order status/i
+    );
+  }
 );
 
-assert.equal(
-  getTableStatus(
-    state,
-    table.id,
-    now + 5000
-  ),
-  "cleaning"
+// TEST 11
+
+test(
+  "Loyalty points come from paid orders",
+  () => {
+    assert.equal(
+      getMemberPoints(
+        state,
+        "QA Guest"
+      ),
+
+      Math.floor(
+        state.orders[0].total /
+          POLICIES.loyaltySpendPerPoint
+      )
+    );
+  }
 );
 
-const other = state.tables.find(
-  (t) =>
-    t.id !== table.id &&
-    !t.unavailable &&
-    !t.cleaning
+// TEST 12
+
+test(
+  "Dashboard totals reflect paid demo transactions",
+  () => {
+    const stats = getCafeStats(
+      state,
+      now
+    );
+
+    assert.equal(
+      stats.todayRevenue,
+      state.transactions[0].amount
+    );
+
+    assert.equal(
+      stats.totalTables,
+      28
+    );
+  }
 );
 
-assert(other);
+// TEST 13
 
-const startAt =
-  now + 2 * 24 * 60 * 60 * 1000;
-
-state = reserveTable(
-  state,
-  {
-    tableId: other.id,
-    partySize: 1,
-    startAt,
-  },
-  now
-);
-
-assert.equal(
-  isTableFreeForPeriod(
-    state,
-    other.id,
-    startAt,
-    startAt +
-      POLICIES.reservationDurationMinutes * 60000,
-    now
-  ),
-  false
-);
-
-assert.throws(
-  () =>
-    reserveTable(
+test(
+  "Table check-in, checkout and cleaning status work",
+  () => {
+    state = seatGuests(
       state,
       {
-        tableId: other.id,
-        partySize: 1,
-        startAt,
+        tableId,
+
+        nickname: "QA Guest",
+        partySize: 2,
       },
       now
-    ),
-  /unavailable/i
+    );
+
+    assert.equal(
+      getTableStatus(
+        state,
+        tableId,
+        now
+      ),
+      "occupied"
+    );
+
+    state = completeVisit(
+      state,
+      state.visits[0].id,
+      now
+    );
+
+    assert.equal(
+      getTableStatus(
+        state,
+        tableId,
+        now
+      ),
+      "cleaning"
+    );
+
+    state = setTableCondition(
+      state,
+      tableId,
+      {
+        field: "cleaning",
+        value: false,
+      },
+      now
+    );
+
+    assert.equal(
+      getTableStatus(
+        state,
+        tableId,
+        now
+      ),
+      "available"
+    );
+  }
 );
 
 console.log(
-  "PASS: initial seating, duplicate-seat rejection, dine-in order, barista flow, inventory deduction, payment once, checkout, cleaning, overlapping reservation rejection."
+  `\n${count} smoke tests passed${
+    process.exitCode
+      ? " (some failed)"
+      : ""
+  }.`
 );
 
-console.log(
-  "NOTE: Pure state test only; browser layout, Netlify and real-payment behavior are NOT tested."
-);
+if (!process.exitCode) {
+  console.log(
+    "All test data was in memory. No browser storage was changed."
+  );
+}

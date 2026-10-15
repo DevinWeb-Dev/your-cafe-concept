@@ -1,142 +1,561 @@
-// YOUR CAFÉ — Staff operations layout (frontend demonstration)
-// FILE: src/components/StaffLayout.jsx
-// Website Concept Made by: Web Developer Devin Planas
 import { useEffect, useRef, useState } from "react";
-import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
 import {
-  ArrowUpRight, Armchair, BarChart3, Boxes, CalendarDays,
-  ChefHat, Coffee, LayoutDashboard, Menu, Settings, X, CreditCard, FileText, Users, Activity,
-} from "lucide-react";
-import { BRAND, formatPeso } from "../data/config.js";
-import { useCafe } from "../context/CafeContext.jsx";
+  Link,
+  NavLink,
+  Outlet,
+  useLocation,
+} from "react-router-dom";
 
-const ADMIN_NAV = [
-  { to: "/staff", label: "Overview", icon: LayoutDashboard, end: true },
-  { to: "/staff/tables", label: "Floor & Tables", icon: Armchair },
-  { to: "/staff/pos", label: "Café POS", icon: CreditCard },
-  { to: "/staff/orders", label: "Orders / Barista", icon: ChefHat },
-  { to: "/staff/reservations", label: "Reservations", icon: CalendarDays },
-  { to: "/staff/inventory", label: "Inventory", icon: Boxes },
-  { to: "/staff/menu-management", label: "Menu Studio", icon: Coffee },
-  { to: "/staff/customers", label: "Customers", icon: Users },
-  { to: "/staff/activity", label: "Activity Feed", icon: Activity },
-  { to: "/staff/transactions", label: "Transactions", icon: FileText },
-  { to: "/staff/reports", label: "Reports", icon: BarChart3 },
-  { to: "/staff/settings", label: "Demo Settings", icon: Settings },
+import {
+  Activity,
+  ArrowUpRight,
+  Armchair,
+  BarChart3,
+  Boxes,
+  CalendarDays,
+  CheckCircle2,
+  ChefHat,
+  ChevronRight,
+  Clock3,
+  Coffee,
+  CreditCard,
+  FileText,
+  LayoutDashboard,
+  Menu,
+  Settings,
+  ShoppingBag,
+  Users,
+  X,
+} from "lucide-react";
+
+import {
+  BRAND,
+  formatPeso,
+} from "../data/config.js";
+
+import {
+  useCafe,
+} from "../context/CafeContext.jsx";
+
+import "../styles/coffee-staff-studio.css";
+
+const navigation = [
+  {
+    title: "COMMAND CENTER",
+    items: [
+      {
+        to: "/staff",
+        label: "Overview",
+        icon: LayoutDashboard,
+        end: true,
+      },
+      {
+        to: "/staff/pos",
+        label: "Point of sale",
+        icon: CreditCard,
+      },
+      {
+        to: "/staff/orders",
+        label: "Barista queue",
+        icon: ChefHat,
+        count: "orders",
+      },
+      {
+        to: "/staff/tables",
+        label: "Floor & tables",
+        icon: Armchair,
+      },
+      {
+        to: "/staff/reservations",
+        label: "Reservations",
+        icon: CalendarDays,
+        count: "reservations",
+      },
+    ],
+  },
+  {
+    title: "BACK OF HOUSE",
+    items: [
+      {
+        to: "/staff/inventory",
+        label: "Inventory",
+        icon: Boxes,
+      },
+      {
+        to: "/staff/menu-management",
+        label: "Menu studio",
+        icon: Coffee,
+      },
+      {
+        to: "/staff/customers",
+        label: "Customer records",
+        icon: Users,
+      },
+      {
+        to: "/staff/activity",
+        label: "Activity feed",
+        icon: Activity,
+      },
+    ],
+  },
+  {
+    title: "INTELLIGENCE",
+    items: [
+      {
+        to: "/staff/transactions",
+        label: "Transactions",
+        icon: FileText,
+      },
+      {
+        to: "/staff/reports",
+        label: "Reports",
+        icon: BarChart3,
+      },
+      {
+        to: "/staff/settings",
+        label: "Demo settings",
+        icon: Settings,
+      },
+    ],
+  },
 ];
 
-function StaffToast() {
-  const { notice, clearNotice } = useCafe();
+function StaffNotice() {
+  const {
+    notice,
+    clearNotice,
+  } = useCafe();
+
   if (!notice) return null;
-  return <div className={`toast ${notice.type || "success"}`} role={notice.type === "error" ? "alert" : "status"}>
-    <span>{notice.text}</span>
-    <button type="button" aria-label="Dismiss notification" onClick={clearNotice}><X size={18}/></button>
-  </div>;
+
+  return (
+    <div
+      className={`cj4-notice ${
+        notice.type === "error"
+          ? "is-error"
+          : ""
+      }`}
+      role={
+        notice.type === "error"
+          ? "alert"
+          : "status"
+      }
+    >
+      <CheckCircle2
+        size={18}
+        aria-hidden="true"
+      />
+
+      <span>{notice.text}</span>
+
+      <button
+        type="button"
+        aria-label="Dismiss notification"
+        onClick={clearNotice}
+      >
+        <X size={19} />
+      </button>
+    </div>
+  );
 }
 
 export default function StaffLayout() {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const { pathname } = useLocation();
-  const { stats, orders, reservations } = useCafe();
-  const openButtonRef = useRef(null);
 
-  useEffect(() => { setSidebarOpen(false); }, [pathname]);
+  const {
+    stats,
+    orders,
+    reservations,
+    now,
+  } = useCafe();
+
+  const [open, setOpen] = useState(false);
+
+  const openButton = useRef(null);
+  const drawer = useRef(null);
+
+  const orderCount = orders.filter(
+    (item) =>
+      [
+        "received",
+        "accepted",
+        "preparing",
+      ].includes(item.status)
+  ).length;
+
+  const bookingCount =
+    reservations.filter(
+      (item) =>
+        item.status === "reserved"
+    ).length;
+
+  const current = navigation
+    .flatMap((section) => section.items)
+    .find(
+      (item) => item.to === pathname
+    );
+
+  const clock = new Intl.DateTimeFormat(
+    "en-PH",
+    {
+      timeZone: "Asia/Manila",
+      hour: "numeric",
+      minute: "2-digit",
+    }
+  ).format(now);
 
   useEffect(() => {
-    if (!sidebarOpen) return;
-    function onEscape(event) {
-      if (event.key === "Escape") {
-        setSidebarOpen(false);
-        openButtonRef.current?.focus();
-      }
-    }
-    window.addEventListener("keydown", onEscape);
-    return () => window.removeEventListener("keydown", onEscape);
-  }, [sidebarOpen]);
+    setOpen(false);
+  }, [pathname]);
 
-  const page = ADMIN_NAV.find((item) => item.to === pathname);
-  const pendingOrders = orders.filter((o) => ["received", "accepted", "preparing"].includes(o.status)).length;
-  const activeBookings = reservations.filter((r) => r.status === "reserved").length;
+  useEffect(() => {
+    if (!open) return;
+
+    const prior =
+      document.body.style.overflow;
+
+    document.body.style.overflow =
+      "hidden";
+
+    drawer.current
+      ?.querySelector("a[href]")
+      ?.focus();
+
+    const onKey = (event) => {
+      if (event.key === "Escape") {
+        setOpen(false);
+        openButton.current?.focus();
+      }
+
+      if (
+        event.key !== "Tab" ||
+        !drawer.current
+      ) {
+        return;
+      }
+
+      const links = [
+        ...drawer.current.querySelectorAll(
+          'a[href],button:not([disabled])'
+        ),
+      ].filter(
+        (el) =>
+          el.getClientRects().length
+      );
+
+      if (!links.length) return;
+
+      if (
+        event.shiftKey &&
+        document.activeElement ===
+          links[0]
+      ) {
+        event.preventDefault();
+
+        links.at(-1).focus();
+      }
+
+      if (
+        !event.shiftKey &&
+        document.activeElement ===
+          links.at(-1)
+      ) {
+        event.preventDefault();
+
+        links[0].focus();
+      }
+    };
+
+    window.addEventListener(
+      "keydown",
+      onKey
+    );
+
+    return () => {
+      document.body.style.overflow =
+        prior;
+
+      window.removeEventListener(
+        "keydown",
+        onKey
+      );
+    };
+  }, [open]);
 
   return (
-    <div className="staff-app yc-staff-layout">
-      {sidebarOpen && <button type="button" className="mobile-shade" onClick={() => setSidebarOpen(false)} aria-label="Close sidebar"/>}
-      <aside className={`staff-aside ${sidebarOpen ? "visible" : ""}`} aria-label="Staff navigation">
-        <div className="staff-brand">
-          <Link to="/staff" className="brand" aria-label={`${BRAND.name} staff dashboard`}>
-            <span className="brand-symbol"><Coffee size={23}/></span>
-            <span><b>{BRAND.name}</b><small>OPERATIONS STUDIO</small></span>
+    <div className="staff-app cj4-studio">
+      {open && (
+        <button
+          type="button"
+          className="cj4-backdrop"
+          aria-label="Close workspace navigation"
+          onClick={() => {
+            setOpen(false);
+            openButton.current?.focus();
+          }}
+        />
+      )}
+
+      <aside
+        className={`cj4-sidebar ${
+          open ? "is-open" : ""
+        }`}
+        ref={drawer}
+        aria-label="Staff workspace navigation"
+        inert={
+          !open &&
+          typeof window !==
+            "undefined" &&
+          window.innerWidth <= 1100
+            ? true
+            : undefined
+        }
+      >
+        <div className="cj4-sidebar-head">
+          <Link
+            to="/staff"
+            className="cj4-identity"
+            aria-label="Your Café Operations Studio home"
+          >
+            <span className="cj4-identity-symbol">
+              <Coffee size={24} />
+            </span>
+
+            <span>
+              <strong>
+                YOUR CAFÉ
+                <span>.</span>
+              </strong>
+
+              <small>
+                THE OPERATIONS JOURNAL
+              </small>
+            </span>
           </Link>
-          <button type="button" className="staff-close" onClick={() => setSidebarOpen(false)} aria-label="Close sidebar"><X size={20}/></button>
+
+          <button
+            className="cj4-close"
+            type="button"
+            aria-label="Close navigation"
+            onClick={() => {
+              setOpen(false);
+              openButton.current?.focus();
+            }}
+          >
+            <X size={21} />
+          </button>
         </div>
-        <div className="staff-label">WORKSPACE / LOCAL DEMO</div>
-        <nav aria-label="Staff sections">
-          {ADMIN_NAV.map(({ to, label, icon: Icon, end }) => (
-            <NavLink key={to} to={to} end={end}>
-              <Icon size={18} strokeWidth={1.7}/>
-              <span>{label}</span>
-              {to === "/staff/orders" && pendingOrders > 0 && <small className="yc-nav-count">{pendingOrders}</small>}
-              {to === "/staff/reservations" && activeBookings > 0 && <small className="yc-nav-count">{activeBookings}</small>}
-            </NavLink>
+
+        <div className="cj4-sidebar-intro">
+          <span>
+            VOL. 01 / OPERATIONS
+          </span>
+
+          <span className="cj4-online-dot" />
+
+          LOCAL SIMULATION
+        </div>
+
+        <nav
+          className="cj4-navigation"
+          aria-label="Staff sections"
+        >
+          {navigation.map((group) => (
+            <div
+              className="cj4-navigation-group"
+              key={group.title}
+            >
+              <p>{group.title}</p>
+
+              {group.items.map(
+                ({
+                  to,
+                  label,
+                  icon: Icon,
+                  end,
+                  count,
+                }) => (
+                  <NavLink
+                    key={to}
+                    to={to}
+                    end={end}
+                    className={({
+                      isActive,
+                    }) =>
+                      `cj4-nav-link ${
+                        isActive
+                          ? "is-active"
+                          : ""
+                      }`
+                    }
+                  >
+                    <Icon
+                      size={18}
+                      strokeWidth={1.7}
+                    />
+
+                    <span>{label}</span>
+
+                    {count &&
+                    (count === "orders"
+                      ? orderCount
+                      : bookingCount) > 0 ? (
+                      <small>
+                        {count === "orders"
+                          ? orderCount
+                          : bookingCount}
+                      </small>
+                    ) : (
+                      <ChevronRight
+                        size={13}
+                        className="cj4-nav-arrow"
+                      />
+                    )}
+                  </NavLink>
+                )
+              )}
+            </div>
           ))}
         </nav>
-        <div className="yc-staff-sidebar-bottom">
-          <div className="yc-staff-side-summary">
-            <span>CAFÉ STATUS <i>• DEMO</i></span>
-            <strong>{stats.occupied} / {stats.totalTables}</strong>
-            <small>Seating units occupied</small>
-            <div className="yc-staff-meter"><i style={{ width: `${Math.min(100, Math.max(0, stats.occupancyPercent))}%` }}/></div>
+
+        <div className="cj4-sidebar-bottom">
+          <div className="cj4-sidebar-occupancy">
+            <span>
+              THE FLOOR / NOW
+            </span>
+
+            <strong>
+              {stats.occupied}
+              <i>
+                {" "}
+                / {stats.totalTables}
+              </i>
+            </strong>
+
+            <small>
+              Tables currently occupied
+              in the demo
+            </small>
+
+            <div className="cj4-meter">
+              <span
+                style={{
+                  width: `${Math.min(
+                    100,
+                    Math.max(
+                      0,
+                      stats.occupancyPercent
+                    )
+                  )}%`,
+                }}
+              />
+            </div>
           </div>
-          <Link className="return-site" to="/">View Customer Website <ArrowUpRight size={17}/></Link>
-          <p className="side-note">Local prototype only. No live restaurant bookings, payment processing, or staff authentication.</p>
+
+          <Link
+            to="/"
+            className="cj4-back-to-site"
+          >
+            VIEW CUSTOMER WEBSITE
+            <ArrowUpRight size={17} />
+          </Link>
+
+          <p>
+            Portfolio concept. No live
+            staff login, payments, or
+            bookings.
+          </p>
         </div>
       </aside>
-      <div className="staff-workspace">
-        <header className="staff-top">
-          <div className="yc-staff-top-left">
-            <button ref={openButtonRef} className="staff-menu-btn" type="button" onClick={() => setSidebarOpen(true)} aria-label="Open sidebar"><Menu size={21}/></button>
-            <div><small>YOUR CAFÉ / OPERATIONS</small><strong>{page?.label || "Café Workspace"}</strong></div>
+
+      <div className="cj4-content">
+        <header className="cj4-topbar">
+          <div className="cj4-topbar-left">
+            <button
+              ref={openButton}
+              type="button"
+              className="cj4-hamburger"
+              aria-label="Open staff navigation"
+              aria-controls="cj4-menu"
+              aria-expanded={open}
+              onClick={() =>
+                setOpen(true)
+              }
+            >
+              <Menu size={22} />
+            </button>
+
+            <div>
+              <span>
+                OPERATIONS JOURNAL
+                <i>
+                  {" "}
+                  /{" "}
+                  {current?.label.toUpperCase() ||
+                    "WORKSPACE"}
+                </i>
+              </span>
+
+              <strong>
+                {current?.label ||
+                  "Staff workspace"}
+              </strong>
+            </div>
           </div>
-          <div className="yc-staff-top-right">
-            <span className="yc-demo-pill">LOCAL DEMO</span>
-            <span className="yc-revenue">SALES TODAY <strong>{formatPeso(stats.todayRevenue)}</strong></span>
-            <Link to="/" className="staff-live">VIEW WEBSITE <ArrowUpRight size={15}/></Link>
+
+          <div className="cj4-topbar-right">
+            <span className="cj4-clock">
+              <Clock3 size={14} />
+              {clock} PHT
+            </span>
+
+            <span className="cj4-daily-tally">
+              RECORDED TODAY
+              <strong>
+                {formatPeso(
+                  stats.todayRevenue
+                )}
+              </strong>
+            </span>
+
+            <Link
+              to="/staff/pos"
+              className="cj4-new-ticket"
+            >
+              <ShoppingBag size={16} />
+
+              NEW TICKET
+
+              <ArrowUpRight size={15} />
+            </Link>
           </div>
         </header>
-        <main className="staff-main" id="staff-content"><Outlet/></main>
-        <footer className="yc-staff-foot">{BRAND.watermark} · Demonstration data stored in this browser</footer>
+
+        <main
+          id="staff-content"
+          className="staff-main cj4-main"
+        >
+          <Outlet />
+        </main>
+
+        <footer className="cj4-workspace-footer">
+          <span>
+            © {new Date().getFullYear()}
+            {" "}YOUR CAFÉ. / STAFF STUDIO
+          </span>
+
+          <span>
+            {BRAND.watermark}
+          </span>
+
+          <span>
+            FRONTEND DEMO / LOCAL
+            BROWSER DATA
+          </span>
+        </footer>
       </div>
-      <StaffToast />
-      <style>{`
-        .yc-staff-layout{min-height:100dvh}
-        .yc-staff-layout .staff-aside{display:flex;flex-direction:column}
-        .yc-staff-layout .staff-aside nav a{display:flex;align-items:center;gap:12px}
-        .yc-staff-layout .yc-nav-count{margin-left:auto;border-radius:20px;padding:3px 7px;background:#b58b5a22;color:#d7b48e;font:700 10px 'DM Sans',sans-serif}
-        .yc-staff-layout .yc-staff-sidebar-bottom{margin-top:auto}
-        .yc-staff-layout .yc-staff-side-summary{margin:18px 0;padding:19px;background:#ffffff0a;border:1px solid #ffffff13;display:flex;flex-direction:column;gap:8px}
-        .yc-staff-layout .yc-staff-side-summary span{font-size:9px;letter-spacing:.13em;color:#c3aa91;font-weight:700}
-        .yc-staff-layout .yc-staff-side-summary span i{font-style:normal;color:#91a78b}
-        .yc-staff-layout .yc-staff-side-summary strong{font:500 38px/.95 'Cormorant Garamond',serif;color:#f5ede2}
-        .yc-staff-layout .yc-staff-side-summary small{font-size:11px;color:#a79686}
-        .yc-staff-layout .yc-staff-meter{height:4px;margin-top:8px;background:#ffffff20;overflow:hidden}
-        .yc-staff-layout .yc-staff-meter i{display:block;height:100%;background:#b58b5a;transition:width .3s}
-        .yc-staff-layout .yc-staff-top-left{display:flex;align-items:center;gap:12px;min-width:0}
-        .yc-staff-layout .yc-staff-top-left>div{display:flex;flex-direction:column;gap:5px;min-width:0}
-        .yc-staff-layout .yc-staff-top-left small{font:700 9px 'DM Sans',sans-serif;letter-spacing:.13em;color:#8f7d6f}
-        .yc-staff-layout .yc-staff-top-left strong{font:700 13px 'DM Sans',sans-serif;color:#34261d;overflow-wrap:anywhere}
-        .yc-staff-layout .yc-staff-top-right{display:flex;align-items:center;gap:17px}
-        .yc-staff-layout .yc-demo-pill{font-size:9px;letter-spacing:.12em;padding:7px 11px;background:#eee8de;color:#75604e;font-weight:800;white-space:nowrap}
-        .yc-staff-layout .yc-revenue{font-size:9px;color:#8e7b6c;letter-spacing:.08em;white-space:nowrap}
-        .yc-staff-layout .yc-revenue strong{font-size:12px;color:#432e1f;margin-left:8px}
-        .yc-staff-layout .yc-staff-foot{padding:16px 30px;color:#958474;font-size:10px}
-        @media(max-width:990px){.yc-staff-layout .yc-revenue{display:none}}
-        @media(max-width:700px){
-          .yc-staff-layout .yc-staff-top-right .staff-live{display:none}
-          .yc-staff-layout .yc-staff-top-left small{font-size:8px}
-          .yc-staff-layout .yc-staff-side-summary{margin:12px 0}
-          .yc-staff-layout .yc-staff-foot{padding:20px;font-size:9px}
-        }
-      `}</style>
+
+      <StaffNotice />
     </div>
   );
 }

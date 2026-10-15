@@ -1,0 +1,232 @@
+/* YOUR CAFÉ. / BATCH 06
+   Final responsive safeguards.
+   Load after the existing café design styles. */
+
+.cj-shell.cj5-edition,
+.cj4-studio {
+  min-width: 0;
+}
+
+.cj-shell.cj5-edition :where(img, video),
+.cj4-studio :where(img, video) {
+  max-width: 100%;
+}
+
+/* Deep links below sticky navigation */
+
+.cj5-edition :where(section[id], main[id]),
+.cj4-studio :where(section[id], main[id]) {
+  scroll-margin-top: 108px;
+}
+
+/* Direct Staff Demo access */
+
+.cj5-edition .cj5-demo-floating {
+  text-decoration: none;
+  max-width: calc(100vw - 32px);
+}
+
+.cj5-edition .cj5-demo-floating:focus-visible {
+  outline: 3px solid #a84342;
+  outline-offset: 7px;
+}
+
+/* Customer ordering layout safeguards */
+
+.cj5-edition :is(
+  .cj2-catalog-toolbar,
+  .cj2-products,
+  .cj2-checkout-grid,
+  .cj3-workspace-grid,
+  .cj3-availability-filters
+) {
+  min-width: 0;
+}
+
+.cj5-edition :is(
+  .cj2-product,
+  .cj2-checkout-selection,
+  .cj2-checkout-summary,
+  .cj3-plan-zone,
+  .cj3-member-console
+) {
+  min-width: 0;
+}
+
+.cj5-edition :is(
+  .cj2-search input,
+  .cj2-filter-select select,
+  .cj3-field input,
+  .cj3-field select
+) {
+  max-width: 100%;
+  min-width: 0;
+}
+
+/* Staff workspace layout safeguards */
+
+.cj4-studio .cj4-content,
+.cj4-studio .cj4-main,
+.cj4-studio :is(
+  .yc7-pos,
+  .yc7-barista,
+  .yc7-inventory,
+  .yc6-tables,
+  .yc8-reports
+) {
+  min-width: 0;
+}
+
+.cj4-studio :is(
+  .yc7-pos-products,
+  .yc7-inventory-grid,
+  .yc7-barista-columns,
+  .yc7-barista-metrics,
+  .yc6-grid
+) > * {
+  min-width: 0;
+}
+
+/* Tables and records */
+
+.cj4-studio :is(
+  .yc8-reports,
+  .yc7-inventory-movements,
+  .yc7-pos-card
+) :where(table) {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.cj4-studio :is(
+  .yc8-reports,
+  .yc7-inventory-movements,
+  .yc7-pos-card
+) :where(
+  .table-wrap,
+  .table-scroll,
+  .overflow-table
+) {
+  overflow-x: auto;
+  max-width: 100%;
+}
+
+/* Compact desktop */
+
+@media (max-width: 1300px) and (min-width: 1181px) {
+  .cj5-edition .cj-header-inner {
+    width: calc(100% - 48px);
+    gap: 10px;
+  }
+
+  .cj5-edition .cj-desktop-nav {
+    gap: 9px;
+  }
+
+  .cj5-edition .cj-header-cta {
+    padding-inline: 11px;
+    gap: 7px;
+  }
+}
+
+/* Tablets */
+
+@media (max-width: 900px) {
+  .cj5-edition .cj5-demo-showcase h2 {
+    overflow-wrap: break-word;
+  }
+
+  .cj4-studio :is(
+    .yc7-pos-side,
+    .yc6-sidebar
+  ) {
+    position: static;
+    top: auto;
+  }
+}
+
+/* Smartphones */
+
+@media (max-width: 600px) {
+  .cj5-edition .cj5-demo-floating {
+    right: 10px;
+    bottom: max(
+      10px,
+      env(safe-area-inset-bottom)
+    );
+
+    min-height: 52px;
+    padding: 6px 10px 6px 6px;
+    gap: 8px;
+  }
+
+  .cj5-edition .cj5-demo-floating-icon {
+    height: 37px;
+    width: 37px;
+  }
+
+  .cj5-edition .cj5-demo-floating-copy strong {
+    font-size: 9px;
+    line-height: 1.2;
+  }
+
+  .cj5-edition .cj5-demo-floating-copy small {
+    display: none;
+  }
+
+  .cj5-edition .cj-prototype-note {
+    display: none;
+  }
+
+  .cj5-edition .cj5-chapter-current {
+    flex: 1;
+  }
+
+  .cj5-edition .cj2-catalog-toolbar {
+    gap: 8px;
+  }
+
+  .cj5-edition .cj2-search,
+  .cj5-edition .cj2-filter-select {
+    min-width: 0;
+  }
+
+  .cj4-studio .cj4-topbar {
+    gap: 8px;
+  }
+
+  .cj4-studio .cj4-topbar-left {
+    gap: 9px;
+  }
+
+  .cj4-studio .cj4-workspace-footer {
+    padding-bottom: 24px;
+  }
+}
+
+/* Small smartphones */
+
+@media (max-width: 390px) {
+  .cj5-edition .cj5-demo-floating {
+    max-width: calc(100vw - 20px);
+  }
+
+  .cj5-edition .cj5-demo-floating-copy strong {
+    font-size: 8px;
+  }
+
+  .cj4-studio .cj4-new-ticket {
+    gap: 5px;
+  }
+}
+
+/* Accessibility */
+
+@media (prefers-reduced-motion: reduce) {
+  .cj5-edition *,
+  .cj4-studio * {
+    scroll-behavior: auto !important;
+    animation-duration: .01ms !important;
+    transition-duration: .01ms !important;
+  }
+}

@@ -1,225 +1,729 @@
-// YOUR CAFÉ — Premium customer homepage
-// FILE: src/pages/public/HomePage.jsx
-// Website Concept Made by: Web Developer Devin Planas
-import { useState } from "react";
+// YOUR CAFÉ — SIGNATURE UPGRADE BATCH 01
+// The Coffee Journal homepage.
+// Uses existing menu data and DrinkCustomizer.
+
+import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+
 import {
-  ArrowDownRight, ArrowRight, ArrowUpRight, Armchair,
-  Coffee, Heart, Leaf, Plus, Sparkles, Sun,
+  ArrowDownRight,
+  ArrowRight,
+  ArrowUpRight,
+  Armchair,
+  BookOpen,
+  Coffee,
+  Heart,
+  Leaf,
+  Plus,
+  Sparkles,
+  Sun,
+  MoveUpRight,
 } from "lucide-react";
+
 import {
-  BRAND, MENU_CATEGORIES, MENU_ITEMS, PHOTOS,
-  SEATING_ZONES, formatPeso,
+  BRAND,
+  MENU_CATEGORIES,
+  MENU_ITEMS,
+  PHOTOS,
+  SEATING_ZONES,
+  formatPeso,
 } from "../../data/config.js";
+
 import { useCafe } from "../../context/CafeContext.jsx";
 import DrinkCustomizer from "../../components/DrinkCustomizer.jsx";
 
-function Kicker({ children, light = false }) {
-  return <span className={`yc-home-kicker ${light ? "light" : ""}`}><span aria-hidden="true"/> {children}</span>;
+const issueTags = [
+  "THE DAILY RITUAL",
+  "SLOW MORNINGS",
+  "POURED WITH PURPOSE",
+];
+
+function JournalEyebrow({
+  children,
+  light = false,
+}) {
+  return (
+    <span
+      className={`cj-kicker ${
+        light ? "cj-kicker--light" : ""
+      }`}
+    >
+      <i aria-hidden="true">✳</i>
+      {children}
+    </span>
+  );
 }
 
-function FeatureProduct({ product }) {
-  const [customize, setCustomize] = useState(false);
-  return <>
-    <article className="product-card yc-home-product">
-      <div className="product-image">
-        <img src={product.image} alt={`Illustrative photo for ${product.name}`} loading="lazy" />
-        {product.signature && <span className="signature-tag">SIGNATURE</span>}
+function MenuFeature({
+  product,
+  index,
+  onCustomize,
+}) {
+  const category = MENU_CATEGORIES.find(
+    (item) => item.id === product.categoryId
+  );
+
+  return (
+    <article
+      className={`cj-menu-card ${
+        index === 0
+          ? "cj-menu-card--feature"
+          : ""
+      }`}
+    >
+      <div className="cj-menu-image">
+        <img
+          src={product.image}
+          alt={`Illustrative ${product.name}`}
+          loading="lazy"
+          decoding="async"
+        />
+
+        <span className="cj-menu-count">
+          {String(index + 1).padStart(2, "0")}
+          {" "} / THE SELECTION
+        </span>
+
+        {product.signature && (
+          <span className="cj-menu-signature">
+            HOUSE FAVORITE
+          </span>
+        )}
       </div>
-      <div className="product-details">
-        <span className="product-category">{MENU_CATEGORIES.find((item) => item.id === product.categoryId)?.name || "CAFÉ FAVORITE"}</span>
-        <h3>{product.name}</h3>
-        <p>{product.description}</p>
-        <div className="product-bottom">
-          <strong>{formatPeso(product.price)}</strong>
-          <button type="button" aria-label={`Customize ${product.name}`} onClick={() => setCustomize(true)}><Plus size={18}/></button>
+
+      <div className="cj-menu-info">
+        <span className="cj-menu-category">
+          {category?.name || "FROM THE CAFÉ"}
+        </span>
+
+        <div className="cj-menu-name-row">
+          <h3>{product.name}</h3>
+
+          <strong>
+            {formatPeso(product.price)}
+          </strong>
         </div>
+
+        <p>{product.description}</p>
+
+        <button
+          type="button"
+          onClick={() => onCustomize(product)}
+        >
+          CUSTOMIZE THIS ORDER
+
+          <span>
+            <Plus size={18} />
+          </span>
+        </button>
       </div>
     </article>
-    <DrinkCustomizer open={customize} product={product} onClose={() => setCustomize(false)}/>
-  </>;
+  );
 }
 
 export default function HomePage() {
   const { stats } = useCafe();
-  const featured = MENU_ITEMS.filter((item) => item.available && item.featured).slice(0, 4);
 
-  return <div className="yc-home">
-    {/* Cinematic coffee arrival */}
-    <section className="hero yc-home-hero">
-      <div className="hero-image" style={{
-        backgroundImage: `linear-gradient(92deg,rgba(30,19,13,.95) 0%,rgba(30,19,13,.84) 30%,rgba(30,19,13,.22) 72%,rgba(30,19,13,.09) 100%),url('${PHOTOS.hero}')`,
-      }}/>
-      <div className="shell hero-content">
-        <Kicker light>A SPACE FOR LIFE'S LITTLE MOMENTS</Kicker>
-        <h1>Crafted <i>with care.</i><br/>Served with <em>soul.</em></h1>
-        <p>Exceptional coffee. Beautifully unhurried moments. An everyday ritual worth slowing down for.</p>
-        <div className="hero-actions">
-          <Link className="btn btn-primary" to="/menu">Discover Our Menu <ArrowUpRight size={17}/></Link>
-          <Link className="btn btn-outline" to="/reserve">Reserve a Table <ArrowRight size={17}/></Link>
+  const [activeCategory, setActiveCategory] =
+    useState("all");
+
+  const [customProduct, setCustomProduct] =
+    useState(null);
+
+  const featured = useMemo(
+    () =>
+      MENU_ITEMS.filter(
+        (item) =>
+          item.available && item.featured
+      ).slice(0, 10),
+    []
+  );
+
+  const categories = useMemo(
+    () => [
+      { id: "all", name: "All picks" },
+
+      ...MENU_CATEGORIES.filter(
+        (category) =>
+          category.id !== "all" &&
+          featured.some(
+            (item) =>
+              item.categoryId === category.id
+          )
+      ),
+    ],
+    [featured]
+  );
+
+  const visible = featured
+    .filter(
+      (item) =>
+        activeCategory === "all" ||
+        item.categoryId === activeCategory
+    )
+    .slice(0, 4);
+
+  return (
+    <div className="cj-home">
+      {/* HERO / COFFEE JOURNAL COVER */}
+
+      <section
+        className="cj-hero"
+        aria-labelledby="cj-hero-title"
+      >
+        <div className="cj-hero-topnote">
+          <span>
+            AN EVERYDAY COFFEE JOURNAL
+          </span>
+
+          <span>
+            FRESHLY BREWED / VOL. 001
+          </span>
         </div>
-        <span className="hero-foot"><span className="hero-foot-line"/> SPECIALTY COFFEE · EVERYDAY RITUALS · WARM HOSPITALITY</span>
-      </div>
-      <div className="yc-hero-coffee-tag"><Coffee size={22}/><div><strong>A moment in every cup</strong><small>{BRAND.subtitle}</small></div></div>
-    </section>
 
-    {/* A quiet ribbon instead of a generic feature grid */}
-    <div className="marquee-strip yc-coffee-ribbon" aria-label="Our café values">
-      <div className="shell"><span>BREWED WITH PURPOSE</span><b>✦</b><span>MADE FOR CONNECTION</span><b>✦</b><span>SAVOR THE SLOW MOMENTS</span><b>✦</b><span>THE ART OF EVERYDAY COFFEE</span></div>
-    </div>
+        <div className="cj-hero-grid">
+          <div className="cj-hero-copy">
+            <JournalEyebrow>
+              THE HOUSE EDIT / YOUR CAFÉ.
+            </JournalEyebrow>
 
-    {/* Specialty selection */}
-    <section className="section cream yc-home-collection">
-      <div className="shell">
-        <div className="section-top">
-          <div><Kicker>FROM OUR COFFEE BAR</Kicker><h2>Beautifully made.<br/><em>Thoughtfully enjoyed.</em></h2></div>
-          <Link className="text-link" to="/menu">DISCOVER THE FULL MENU <ArrowUpRight size={17}/></Link>
-        </div>
-        <div className="product-grid">
-          {featured.map((product) => <FeatureProduct key={product.id} product={product}/>) }
-        </div>
-        <p className="yc-home-products-note">Illustrative menu, photography and sample prices in Philippine pesos.</p>
-      </div>
-    </section>
+            <h1 id="cj-hero-title">
+              Life happens.
+              <br />
+              <em>Coffee helps.</em>
+            </h1>
 
-    {/* An editorial architectural composition */}
-    <section className="yc-home-editorial">
-      <div className="yc-home-editorial-media">
-        <img src={PHOTOS.interior} alt="Illustrative warm specialty coffee shop interior" loading="lazy"/>
-        <div className="yc-home-photo-stamp"><span>01</span> A PLACE TO BELONG</div>
-      </div>
-      <div className="yc-home-editorial-copy">
-        <Kicker>A LITTLE MORE THAN COFFEE</Kicker>
-        <h2>Stay a little.<br/><em>Savor a lot.</em></h2>
-        <p>Some moments deserve to be unhurried. A quiet window seat, a warm cup in your hands, and the simple pleasure of being right where you want to be.</p>
-        <p>Discover our concept café spaces and reserve a comfortable place for your next conversation.</p>
-        <Link to="/reserve" className="btn btn-primary">Find Your Perfect Seat <ArrowUpRight size={17}/></Link>
-        <div className="yc-home-space-stats">
-          <span><Armchair size={17}/><strong>{stats.totalTables}</strong><small>DEMO SEATING UNITS</small></span>
-          <span><Sun size={17}/><strong>{SEATING_ZONES.length}</strong><small>SEATING EXPERIENCES</small></span>
-        </div>
-      </div>
-    </section>
+            <p>
+              For conversations that run long,
+              mornings that start slow, and cups
+              you wish would never end.
+              Your little pause, beautifully brewed.
+            </p>
 
-    {/* Purposefully asymmetrical visual storytelling */}
-    <section className="yc-home-craft">
-      <div className="shell yc-home-craft-grid">
-        <div className="yc-home-craft-copy">
-          <Kicker light>THE ART BEHIND EVERY CUP</Kicker>
-          <h2>Good coffee is<br/><em>a beautiful ritual.</em></h2>
-          <p>From the aroma of freshly ground beans to that first calming sip, every detail creates a feeling worth returning to.</p>
-          <Link className="yc-home-underline-link" to="/story">THE STORY BEHIND THE CUP <ArrowUpRight size={17}/></Link>
-          <div className="yc-home-craft-points">
-            <span><Leaf size={18}/> Thoughtful coffee preparation</span>
-            <span><Heart size={18}/> Hospitality in every detail</span>
-            <span><Sparkles size={18}/> Warm, welcoming café moments</span>
+            <div className="cj-hero-ctas">
+              <Link
+                className="cj-cta cj-cta--dark"
+                to="/menu"
+              >
+                EXPLORE THE MENU
+                <ArrowUpRight size={18} />
+              </Link>
+
+              <Link
+                className="cj-cta cj-cta--outline"
+                to="/reserve"
+              >
+                FIND YOUR TABLE
+                <ArrowRight size={17} />
+              </Link>
+            </div>
+
+            <div className="cj-hero-footnote">
+              <span className="cj-footnote-line" />
+
+              A CAFÉ FOR ALL THE IN-BETWEEN MOMENTS
+            </div>
+          </div>
+
+          <div className="cj-hero-stage">
+            <div
+              className="cj-hero-oval"
+              aria-hidden="true"
+            />
+
+            <div className="cj-hero-photo">
+              <img
+                src={PHOTOS.coffee}
+                alt="Fresh coffee served in a cup"
+                fetchPriority="high"
+                decoding="async"
+              />
+            </div>
+
+            <div className="cj-hero-inset">
+              <img
+                src={PHOTOS.interior}
+                alt="Illustrative café interior"
+                decoding="async"
+              />
+            </div>
+
+            <div
+              className="cj-hero-seal"
+              aria-label="Coffee served with care"
+            >
+              <Coffee size={22} />
+
+              <span>
+                BREWED
+                <br />
+                WITH CARE
+              </span>
+            </div>
+
+            <span className="cj-stage-index">
+              FIG. 01 — THE DAILY RITUAL
+            </span>
+
+            <span
+              className="cj-stage-scribble"
+              aria-hidden="true"
+            >
+              a little
+              <br />
+              pause.
+            </span>
           </div>
         </div>
-        <div className="yc-home-craft-images">
-          <img className="yc-craft-main" src={PHOTOS.coffeeCraft} alt="Illustrative coffee brewing arrangement" loading="lazy" />
-          <img className="yc-craft-detail" src={PHOTOS.beans} alt="Illustrative coffee beans" loading="lazy" />
-          <span className="yc-craft-caption">SLOW COFFEE. BEAUTIFUL DAYS.</span>
+
+        <div className="cj-hero-bottom">
+          <span>
+            SCROLL TO DISCOVER
+            <ArrowDownRight size={15} />
+          </span>
+
+          <span>
+            EST. IN POSSIBILITY · PHILIPPINES
+          </span>
+        </div>
+      </section>
+
+      {/* THE DAILY RITUAL STRIP */}
+
+      <div
+        className="cj-ticker"
+        aria-label="Coffee house values"
+      >
+        <div className="cj-ticker-inner">
+          {issueTags.map((tag) => (
+            <span key={tag}>
+              {tag}
+              <i aria-hidden="true">✳</i>
+            </span>
+          ))}
+
+          <span>
+            GOOD COMPANY, ALWAYS
+            <i aria-hidden="true">✳</i>
+          </span>
         </div>
       </div>
-    </section>
 
-    {/* Real destinations — not dead feature buttons */}
-    <section className="yc-home-journey section cream">
-      <div className="shell">
-        <div className="section-top"><div><Kicker>YOUR NEXT MOMENT STARTS HERE</Kicker><h2>More ways to <em>feel at home.</em></h2></div></div>
-        <div className="yc-home-journey-grid">
-          <Link to="/menu" className="yc-home-journey-card"><div className="yc-journey-photo" style={{backgroundImage:`url('${PHOTOS.latte}')`}}/><span>01 / DISCOVER</span><h3>Find your favorite cup.</h3><p>Explore specialty coffee, comforting drinks, pastries and café classics.</p><ArrowUpRight size={22}/></Link>
-          <Link to="/cart" className="yc-home-journey-card"><div className="yc-journey-photo" style={{backgroundImage:`url('${PHOTOS.croissant}')`}}/><span>02 / ENJOY</span><h3>Build your coffee order.</h3><p>Customize a beverage, choose your favorites, and explore our demo checkout.</p><ArrowUpRight size={22}/></Link>
-          <Link to="/reserve" className="yc-home-journey-card"><div className="yc-journey-photo" style={{backgroundImage:`url('${PHOTOS.cafeInterior}')`}}/><span>03 / SETTLE IN</span><h3>A table just for you.</h3><p>Select a café seating area and try our local reservation experience.</p><ArrowUpRight size={22}/></Link>
+      {/* FEATURED MENU / FUNCTIONAL FILTERS */}
+
+      <section
+        className="cj-menu-section"
+        aria-labelledby="cj-menu-heading"
+      >
+        <div className="cj-container">
+          <div className="cj-section-top">
+            <div>
+              <JournalEyebrow>
+                01 / THE EDITOR'S PICKS
+              </JournalEyebrow>
+
+              <h2 id="cj-menu-heading">
+                A good day
+                <br />
+                starts <em>here.</em>
+              </h2>
+            </div>
+
+            <div className="cj-section-aside">
+              <p>
+                A few favorites, thoughtfully
+                poured. Explore our illustrative
+                menu and make your next cup
+                your own.
+              </p>
+
+              <Link
+                to="/menu"
+                className="cj-text-link"
+              >
+                SEE THE COMPLETE MENU
+                <ArrowUpRight size={17} />
+              </Link>
+            </div>
+          </div>
+
+          <div
+            className="cj-filter-row"
+            role="group"
+            aria-label="Featured menu categories"
+          >
+            {categories.map((category) => (
+              <button
+                key={category.id}
+                type="button"
+                onClick={() =>
+                  setActiveCategory(category.id)
+                }
+                className={
+                  activeCategory === category.id
+                    ? "is-active"
+                    : ""
+                }
+                aria-pressed={
+                  activeCategory === category.id
+                }
+              >
+                {category.name}
+              </button>
+            ))}
+          </div>
+
+          <div className="cj-menu-grid">
+            {visible.map((product, index) => (
+              <MenuFeature
+                key={product.id}
+                index={index}
+                product={product}
+                onCustomize={setCustomProduct}
+              />
+            ))}
+          </div>
+
+          <div className="cj-menu-bottom">
+            <span>
+              PRICES IN PHP / SAMPLE MENU,
+              PHOTOGRAPHY & DETAILS
+            </span>
+
+            <Link to="/menu">
+              THE ENTIRE COFFEE EDITION
+              <ArrowRight size={18} />
+            </Link>
+          </div>
         </div>
-      </div>
-    </section>
+      </section>
 
-    <section className="yc-home-finale">
-      <div className="shell"><Kicker light>EVERYDAY MOMENTS, BEAUTIFULLY BREWED</Kicker><h2>There is always time<br/>for <em>one more cup.</em></h2><p>Choose something wonderful from our menu. Make your next coffee ritual your own.</p><Link to="/menu" className="btn btn-primary">Explore the Coffee Menu <ArrowUpRight size={17}/></Link><span><ArrowDownRight size={18}/> {BRAND.tagline}</span></div>
-    </section>
+      {/* EDITORIAL CAFÉ STORY */}
 
-    <style>{`
-      .yc-home .yc-home-kicker{display:inline-flex;align-items:center;gap:12px;color:#997247;font-size:10px;letter-spacing:.16em;font-weight:800;line-height:1.5}
-      .yc-home .yc-home-kicker>span{display:block;width:30px;height:1px;background:#b58b5a;flex-shrink:0}
-      .yc-home .yc-home-kicker.light{color:#e6cfb3}
-      .yc-home .yc-home-hero{min-height:620px}
-      .yc-home .yc-home-hero .hero-image{background-position:center;filter:saturate(.82)}
-      .yc-home .yc-hero-coffee-tag{position:absolute;right:max(36px,calc((100vw - 1350px)/2));bottom:46px;z-index:2;display:flex;align-items:center;gap:14px;padding:19px 25px;background:#f7eee4ed;color:#3f2b1e;box-shadow:0 20px 70px #0003}
-      .yc-home .yc-hero-coffee-tag>div{display:flex;flex-direction:column;gap:5px}
-      .yc-home .yc-hero-coffee-tag strong{font-size:12px}
-      .yc-home .yc-hero-coffee-tag small{font-size:9px;letter-spacing:.1em;color:#856a50}
-      .yc-home .yc-home-collection{padding-bottom:110px}
-      .yc-home .yc-home-collection .product-grid{gap:22px}
-      .yc-home .yc-home-product .product-image{overflow:hidden}
-      .yc-home .yc-home-product .product-details{min-height:220px}
-      .yc-home .yc-home-products-note{margin-top:26px;font-size:10px;color:#8f806e}
-      .yc-home .yc-home-editorial{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr);min-height:680px;background:#eee3d4}
-      .yc-home .yc-home-editorial-media{position:relative;min-height:480px;overflow:hidden;background:#bea58d}
-      .yc-home .yc-home-editorial-media>img{width:100%;height:100%;object-fit:cover}
-      .yc-home .yc-home-photo-stamp{position:absolute;bottom:0;left:0;display:flex;align-items:center;gap:15px;padding:17px 23px;background:#38291f;color:#f4eadd;font-size:10px;letter-spacing:.14em}
-      .yc-home .yc-home-photo-stamp span{font:500 30px 'Cormorant Garamond',serif;color:#d4b48b}
-      .yc-home .yc-home-editorial-copy{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;min-width:0;padding:clamp(42px,8vw,120px)}
-      .yc-home .yc-home-editorial-copy h2,.yc-home .yc-home-craft h2,.yc-home .yc-home-finale h2{font:500 clamp(55px,6vw,96px)/.92 'Cormorant Garamond',serif;letter-spacing:-.043em;margin:20px 0 25px;text-wrap:balance;overflow-wrap:anywhere}
-      .yc-home .yc-home-editorial-copy h2 em,.yc-home .yc-home-craft h2 em,.yc-home .yc-home-finale h2 em{font-weight:400;color:#a77d51}
-      .yc-home .yc-home-editorial-copy p{font-size:13px;line-height:1.95;color:#756656;max-width:480px;margin:0 0 17px}
-      .yc-home .yc-home-editorial-copy .btn{margin-top:15px}
-      .yc-home .yc-home-space-stats{display:flex;flex-wrap:wrap;gap:35px;margin-top:54px}
-      .yc-home .yc-home-space-stats>span{display:grid;grid-template-columns:24px auto;column-gap:12px;align-items:center}
-      .yc-home .yc-home-space-stats strong{font:500 36px/.9 'Cormorant Garamond',serif}
-      .yc-home .yc-home-space-stats small{grid-column:2;color:#876e55;font-size:9px;letter-spacing:.1em;margin-top:8px}
-      .yc-home .yc-home-craft{background:#2b2019;color:#f8f0e4;padding:clamp(85px,10vw,150px) 0;overflow:hidden}
-      .yc-home .yc-home-craft-grid{display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);gap:clamp(40px,7vw,120px);align-items:center}
-      .yc-home .yc-home-craft h2{margin:24px 0 27px}
-      .yc-home .yc-home-craft p{font-size:13px;line-height:1.95;color:#cbbba9;max-width:460px}
-      .yc-home .yc-home-underline-link{display:inline-flex;align-items:center;gap:15px;color:#d2ac7c;border-bottom:1px solid #ae8455;padding:10px 0;margin-top:19px;font-size:10px;letter-spacing:.1em;font-weight:800}
-      .yc-home .yc-home-craft-points{display:grid;gap:15px;margin-top:57px}
-      .yc-home .yc-home-craft-points span{display:flex;align-items:center;gap:13px;color:#dfcdb8;font-size:12px}
-      .yc-home .yc-home-craft-points svg{color:#d2b08a}
-      .yc-home .yc-home-craft-images{position:relative;min-height:590px}
-      .yc-home .yc-home-craft-images .yc-craft-main{position:absolute;top:0;right:0;width:79%;height:81%;object-fit:cover;filter:saturate(.8)}
-      .yc-home .yc-home-craft-images .yc-craft-detail{position:absolute;bottom:0;left:0;width:42%;height:45%;object-fit:cover;border:10px solid #2b2019;filter:saturate(.8)}
-      .yc-home .yc-craft-caption{position:absolute;right:0;bottom:3%;font-size:9px;letter-spacing:.15em;color:#d1b593}
-      .yc-home .yc-home-journey-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:26px}
-      .yc-home .yc-home-journey-card{display:flex;flex-direction:column;min-width:0;position:relative;padding:0 0 20px;border-bottom:1px solid #d3c3ae}
-      .yc-home .yc-journey-photo{width:100%;aspect-ratio:1.35;background-size:cover;background-position:center;filter:saturate(.82);transition:transform .5s}
-      .yc-home .yc-home-journey-card:hover .yc-journey-photo{transform:translateY(-4px)}
-      .yc-home .yc-home-journey-card>span{color:#9c7554;font-size:10px;font-weight:800;letter-spacing:.13em;margin:25px 0 8px}
-      .yc-home .yc-home-journey-card h3{font:500 clamp(29px,3vw,43px)/1.05 'Cormorant Garamond',serif;margin:0 0 10px}
-      .yc-home .yc-home-journey-card p{font-size:12px;line-height:1.8;color:#887665;margin:0 0 20px;max-width:350px}
-      .yc-home .yc-home-journey-card>svg{margin-top:auto;color:#8c6845}
-      .yc-home .yc-home-finale{padding:clamp(85px,9vw,145px) 20px;background:radial-gradient(ellipse at center,#4a3025,#241813 70%);text-align:center;color:#f4eadb}
-      .yc-home .yc-home-finale .shell{display:flex;flex-direction:column;align-items:center}
-      .yc-home .yc-home-finale h2{margin:20px 0}
-      .yc-home .yc-home-finale p{color:#d4c2ad;font-size:13px;line-height:1.85;max-width:440px}
-      .yc-home .yc-home-finale .btn{margin-top:19px}
-      .yc-home .yc-home-finale .shell>span:last-child{display:inline-flex;align-items:center;gap:10px;margin-top:50px;color:#ba9977;font-size:10px;letter-spacing:.08em}
-      @media(max-width:1050px){.yc-home .yc-home-editorial-copy{padding:55px}.yc-home .yc-home-craft-images{min-height:500px}}
-      @media(max-width:780px){
-        .yc-home .yc-hero-coffee-tag{display:none}
-        .yc-home .yc-home-editorial{grid-template-columns:1fr}
-        .yc-home .yc-home-editorial-media{min-height:380px;max-height:540px}
-        .yc-home .yc-home-editorial-copy{padding:60px clamp(22px,5vw,55px)}
-        .yc-home .yc-home-craft-grid{grid-template-columns:1fr}
-        .yc-home .yc-home-craft-images{min-height:500px}
-        .yc-home .yc-home-journey-grid{grid-template-columns:1fr 1fr}
-      }
-      @media(max-width:560px){
-        .yc-home .yc-home-hero{min-height:580px}
-        .yc-home .yc-home-hero h1{font-size:clamp(57px,11.2vw,80px)}
-        .yc-home .yc-coffee-ribbon>.shell{overflow:hidden;justify-content:flex-start;white-space:nowrap}
-        .yc-home .yc-home-collection{padding-block:70px}
-        .yc-home .yc-home-collection .product-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}
-        .yc-home .yc-home-product .product-image{height:170px}
-        .yc-home .yc-home-product .product-details{min-height:225px;padding:13px}
-        .yc-home .yc-home-product h3{font-size:24px}
-        .yc-home .yc-home-product p{font-size:10px}
-        .yc-home .yc-home-space-stats{gap:18px}
-        .yc-home .yc-home-craft-images{min-height:390px}
-        .yc-home .yc-home-journey-grid{grid-template-columns:1fr}
-        .yc-home .yc-journey-photo{aspect-ratio:1.6}
-      }
-      @media(prefers-reduced-motion:reduce){.yc-home .yc-journey-photo{transition:none}}
-    `}</style>
-  </div>;
+      <section
+        className="cj-journal"
+        aria-labelledby="cj-journal-heading"
+      >
+        <div className="cj-journal-photo">
+          <img
+            src={PHOTOS.cafeInterior}
+            alt="Illustrative café interior with welcoming seating"
+            loading="lazy"
+          />
+
+          <span>
+            PLATE 02 — A PLACE TO STAY A WHILE
+          </span>
+        </div>
+
+        <div className="cj-journal-body">
+          <JournalEyebrow>
+            02 / THE SPACE BETWEEN SIPS
+          </JournalEyebrow>
+
+          <h2 id="cj-journal-heading">
+            Somewhere
+            <br />
+            to <em>slow down.</em>
+          </h2>
+
+          <p>
+            A seat by the window. A familiar
+            face across the table. A cup
+            that makes an ordinary afternoon
+            feel like something worth remembering.
+          </p>
+
+          <p>
+            Find the spot that feels like yours,
+            with our interactive café table
+            and reservation demo.
+          </p>
+
+          <div className="cj-journal-stats">
+            <span>
+              <Armchair size={21} />
+
+              <strong>
+                {stats?.totalTables ?? "—"}
+              </strong>
+
+              <small>
+                DEMO SEATING UNITS
+              </small>
+            </span>
+
+            <span>
+              <Sun size={21} />
+
+              <strong>
+                {SEATING_ZONES.length}
+              </strong>
+
+              <small>
+                SEATING ZONES
+              </small>
+            </span>
+          </div>
+
+          <Link
+            to="/reserve"
+            className="cj-cta cj-cta--dark"
+          >
+            FIND A TABLE
+            <ArrowUpRight size={19} />
+          </Link>
+
+          <span className="cj-journal-side-label">
+            NOTES FROM OUR LITTLE CORNER
+            OF THE WORLD
+          </span>
+        </div>
+      </section>
+
+      {/* THE CRAFT / IMMERSIVE COFFEE STORY */}
+
+      <section
+        className="cj-craft"
+        aria-labelledby="cj-craft-heading"
+      >
+        <div className="cj-container cj-craft-grid">
+          <div className="cj-craft-copy">
+            <JournalEyebrow light>
+              03 / FROM BEAN TO BEAUTIFUL
+            </JournalEyebrow>
+
+            <h2 id="cj-craft-heading">
+              Never just
+              <br />
+              <em>coffee.</em>
+            </h2>
+
+            <p>
+              It's the aroma before the first
+              sip. The care behind each pour.
+              The conversation that begins with,
+              “What are you having?”
+            </p>
+
+            <Link
+              to="/story"
+              className="cj-craft-link"
+            >
+              READ OUR STORY
+              <ArrowUpRight size={18} />
+            </Link>
+
+            <div className="cj-craft-values">
+              <span>
+                <Leaf size={18} />
+                Thoughtfully prepared
+              </span>
+
+              <span>
+                <Heart size={18} />
+                Warmly shared
+              </span>
+
+              <span>
+                <Sparkles size={18} />
+                Made for everyday joy
+              </span>
+            </div>
+          </div>
+
+          <div className="cj-craft-visual">
+            <div className="cj-craft-main">
+              <img
+                src={PHOTOS.coffeeCraft}
+                loading="lazy"
+                alt="Illustrative coffee craft setup"
+              />
+            </div>
+
+            <div className="cj-craft-detail">
+              <img
+                src={PHOTOS.beans}
+                loading="lazy"
+                alt="Roasted coffee beans"
+              />
+            </div>
+
+            <div className="cj-craft-stamp">
+              <BookOpen size={20} />
+
+              <span>
+                AN OPEN
+                <br />
+                COFFEE JOURNAL
+              </span>
+            </div>
+
+            <span className="cj-craft-plate">
+              THE PROCESS / THE PLEASURE /
+              THE PAUSE
+            </span>
+          </div>
+        </div>
+      </section>
+
+      {/* FOUR FEATURE JOURNEYS */}
+
+      <section
+        className="cj-chapters"
+        aria-labelledby="cj-chapters-heading"
+      >
+        <div className="cj-container">
+          <div className="cj-section-top cj-chapters-top">
+            <div>
+              <JournalEyebrow>
+                04 / MORE STORIES TO LIVE
+              </JournalEyebrow>
+
+              <h2 id="cj-chapters-heading">
+                Choose your
+                <br />
+                <em>next chapter.</em>
+              </h2>
+            </div>
+
+            <p>
+              There is more to a café than a cup.
+              Find your own way to stay, discover
+              and connect.
+            </p>
+          </div>
+
+          <div className="cj-chapter-list">
+            {[
+              {
+                number: "01",
+                title: "Make it yours.",
+                description:
+                  "Browse, customize and build a demo order.",
+                to: "/menu",
+                image: PHOTOS.latte,
+                label: "MENU & ORDER",
+              },
+              {
+                number: "02",
+                title: "Take your seat.",
+                description:
+                  "Choose a spot and try a table reservation.",
+                to: "/reserve",
+                image: PHOTOS.interior,
+                label: "SEAT & STAY",
+              },
+              {
+                number: "03",
+                title: "Take some home.",
+                description:
+                  "Discover coffee beans and thoughtful gifts.",
+                to: "/coffee-beans",
+                image: PHOTOS.beans,
+                label: "THE RETAIL EDIT",
+              },
+              {
+                number: "04",
+                title: "Be part of it.",
+                description:
+                  "Discover our rewards and community experience.",
+                to: "/membership",
+                image: PHOTOS.cafeInterior,
+                label: "OUR COMMUNITY",
+              },
+            ].map((card) => (
+              <Link
+                to={card.to}
+                key={card.number}
+                className="cj-chapter"
+              >
+                <span className="cj-chapter-number">
+                  {card.number}
+                </span>
+
+                <div className="cj-chapter-image">
+                  <img
+                    src={card.image}
+                    loading="lazy"
+                    alt=""
+                  />
+                </div>
+
+                <div className="cj-chapter-copy">
+                  <small>{card.label}</small>
+
+                  <h3>{card.title}</h3>
+
+                  <p>{card.description}</p>
+                </div>
+
+                <MoveUpRight
+                  size={27}
+                  className="cj-chapter-arrow"
+                />
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* FINAL EDITORIAL INVITATION */}
+
+      <section className="cj-last-word">
+        <div className="cj-last-word-top">
+          <span>
+            AN OPEN INVITATION
+          </span>
+
+          <span>
+            YOUR CAFÉ. / CHAPTER 01
+          </span>
+        </div>
+
+        <span
+          className="cj-last-symbol"
+          aria-hidden="true"
+        >
+          ✳
+        </span>
+
+        <h2>
+          One more cup?
+          <br />
+          <em>Always.</em>
+        </h2>
+
+        <p>
+          Everyday moments, beautifully brewed.
+          See you around the table.
+        </p>
+
+        <Link to="/menu">
+          LET'S GET COFFEE
+          <ArrowUpRight size={19} />
+        </Link>
+
+        <div className="cj-last-word-bottom">
+          <span>
+            THE ART OF EVERYDAY COFFEE
+          </span>
+
+          <span>
+            {BRAND.tagline}
+          </span>
+        </div>
+      </section>
+
+      {/* ORIGINAL DRINK CUSTOMIZER */}
+
+      <DrinkCustomizer
+        product={customProduct}
+        open={Boolean(customProduct)}
+        onClose={() =>
+          setCustomProduct(null)
+        }
+      />
+    </div>
+  );
 }
